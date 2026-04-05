@@ -6,10 +6,11 @@ import {
   Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { format } from 'date-fns';
 import { Visit, CheckInType } from './entities/visit.entity';
-import { CreateVisitDto, CheckInDto, UpdateVisitCategoryDto } from './dto/visit.dto';
+import { CreateVisitDto, CheckInDto, UpdateVisitCategoriesDto } from './dto/visit.dto';
+import { PriorityCategory } from '../config/entities/priority-category.entity';
 import { QueueService } from '../queue/queue.service';
 import { QueueGateway } from '../queue/queue.gateway';
 
@@ -18,6 +19,8 @@ export class VisitsService {
   constructor(
     @InjectRepository(Visit)
     private readonly visitRepo: Repository<Visit>,
+    @InjectRepository(PriorityCategory)
+    private readonly categoryRepo: Repository<PriorityCategory>,
     @Inject(forwardRef(() => QueueService))
     private readonly queueService: QueueService,
     @Inject(forwardRef(() => QueueGateway))
@@ -28,32 +31,35 @@ export class VisitsService {
     const query = this.visitRepo
       .createQueryBuilder('visit')
       .leftJoinAndSelect('visit.patient', 'patient')
-      .leftJoinAndSelect('visit.category', 'category')
       .leftJoinAndSelect('visit.room', 'room')
       .orderBy('visit.createdAt', 'DESC');
 
-    if (date) {
-      query.where('visit.visitDate = :date', { date });
-    }
-    return query.getMany();
+    if (date) query.where('visit.visitDate = :date', { date });
+
+    const visits = await query.getMany();
+
+    // Gắn categories vào từng visit
+    return this.attachCategories(visits);
   }
 
   async findOne(id: string) {
     const visit = await this.visitRepo.findOne({
       where: { id },
-      relations: ['patient', 'category', 'room'],
+      relations: ['patient', 'room'],
     });
     if (!visit) throw new NotFoundException(`Không tìm thấy lượt khám #${id}`);
-    return visit;
+    const [enriched] = await this.attachCategories([visit]);
+    return enriched;
   }
 
   async findByCode(code: string) {
     const visit = await this.visitRepo.findOne({
       where: { visitCode: code },
-      relations: ['patient', 'category', 'room'],
+      relations: ['patient', 'room'],
     });
     if (!visit) throw new NotFoundException(`Không tìm thấy lượt khám: ${code}`);
-    return visit;
+    const [enriched] = await this.attachCategories([visit]);
+    return enriched;
   }
 
   async create(dto: CreateVisitDto) {
@@ -61,53 +67,88 @@ export class VisitsService {
     const visitCode = await this.generateVisitCode(visitDate);
 
     const visit = this.visitRepo.create({
-      ...dto,
+      patientId: dto.patientId,
+      categoryIds: dto.categoryIds,
       visitDate,
       visitCode,
-      appointmentTime: dto.appointmentTime
-        ? new Date(dto.appointmentTime)
-        : null,
+      appointmentTime: dto.appointmentTime ? new Date(dto.appointmentTime) : null,
     });
-    return this.visitRepo.save(visit);
-  }
-
-  async updateCategory(id: string, dto: UpdateVisitCategoryDto) {
-    const visit = await this.findOne(id);
-    visit.categoryId = dto.categoryId;
     const saved = await this.visitRepo.save(visit);
-
-    // E3: Thay đổi đối tượng → tính lại điểm P trong queue
-    await this.queueService.updatePScore(id, visit.category?.scoreP ?? 0);
-    await this.queueGateway.emitQueueUpdate(visit.roomId, visit.visitDate);
-
-    return saved;
+    return this.findOne(saved.id);
   }
 
-  async checkIn(dto: CheckInDto): Promise<Visit> {
-    const visit = await this.findByCode(dto.visitCode);
+  async updateCategories(id: string, dto: UpdateVisitCategoriesDto) {
+    const visit = await this.visitRepo.findOne({ where: { id } });
+    if (!visit) throw new NotFoundException(`Không tìm thấy lượt khám #${id}`);
+
+    visit.categoryIds = dto.categoryIds;
+    await this.visitRepo.save(visit);
+
+    // Tính lại scoreP và emit socket nếu đã check-in
+    if (visit.roomId) {
+      const categories = await this.categoryRepo.findBy({ id: In(dto.categoryIds) });
+      const newScoreP = categories.reduce((sum, c) => sum + c.scoreP, 0);
+      await this.queueService.updatePScore(id, newScoreP);
+      await this.queueGateway.emitQueueUpdate(visit.roomId, visit.visitDate);
+    }
+
+    return this.findOne(id);
+  }
+
+  async checkIn(dto: CheckInDto): Promise<any> {
+    const visit = await this.visitRepo.findOne({
+      where: { visitCode: dto.visitCode },
+      relations: ['patient', 'room'],
+    });
+    if (!visit) throw new NotFoundException(`Không tìm thấy lượt khám: ${dto.visitCode}`);
 
     if (visit.checkInAt) {
       throw new BadRequestException(
-        `Lượt khám ${dto.visitCode} đã được check-in lúc ${visit.checkInAt.toLocaleTimeString('vi-VN')}`,
+        `Lượt khám ${dto.visitCode} đã check-in lúc ${new Date(visit.checkInAt).toLocaleTimeString('vi-VN')}`,
       );
     }
 
+    // Gán phòng khám tại thời điểm check-in
+    visit.roomId = dto.roomId;
     visit.checkInType = dto.type;
     visit.checkInAt = new Date();
-    const saved = await this.visitRepo.save(visit);
+    await this.visitRepo.save(visit);
 
-    // E1/E2: Đẩy vào queue + emit socket
-    const fullVisit = await this.findOne(visit.id);
-    await this.queueService.addToQueue(fullVisit);
-    await this.queueGateway.emitQueueUpdate(visit.roomId, visit.visitDate);
+    // Fetch full visit với categories để tính scoreP
+    const fullVisit = await this.visitRepo.findOne({
+      where: { id: visit.id },
+      relations: ['patient', 'room'],
+    });
 
-    return saved;
+    const categories = await this.categoryRepo.findBy({ id: In(visit.categoryIds) });
+    const scoreP = categories.reduce((sum, c) => sum + c.scoreP, 0);
+
+    // Đẩy vào queue
+    await this.queueService.addToQueue(fullVisit, scoreP);
+    await this.queueGateway.emitQueueUpdate(dto.roomId, fullVisit.visitDate);
+
+    const [enriched] = await this.attachCategories([fullVisit]);
+    return enriched;
+  }
+
+  // Gắn danh sách categories vào visits (batch query)
+  private async attachCategories(visits: Visit[]) {
+    const allIds = [...new Set(visits.flatMap(v => v.categoryIds ?? []))];
+    const categories = allIds.length
+      ? await this.categoryRepo.findBy({ id: In(allIds) })
+      : [];
+
+    const catMap = new Map(categories.map(c => [c.id, c]));
+
+    return visits.map(v => ({
+      ...v,
+      categories: (v.categoryIds ?? []).map(id => catMap.get(id)).filter(Boolean),
+    }));
   }
 
   private async generateVisitCode(date: string): Promise<string> {
     const count = await this.visitRepo.count({ where: { visitDate: date } });
     const seq = String(count + 1).padStart(3, '0');
-    const dateStr = date.replace(/-/g, '');
-    return `VK-${dateStr}-${seq}`;
+    return `VK-${date.replace(/-/g, '')}-${seq}`;
   }
 }

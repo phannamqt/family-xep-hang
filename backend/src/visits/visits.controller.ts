@@ -8,7 +8,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { VisitsService } from './visits.service';
-import { CreateVisitDto, CheckInDto, UpdateVisitCategoryDto } from './dto/visit.dto';
+import { CreateVisitDto, CheckInDto, UpdateVisitCategoriesDto } from './dto/visit.dto';
 
 @Controller('visits')
 export class VisitsController {
@@ -34,16 +34,11 @@ export class VisitsController {
     return this.visitsService.create(dto);
   }
 
-  // Thay đổi đối tượng → trigger tính lại điểm (qua QueueService)
-  @Patch(':id/category')
-  updateCategory(
-    @Param('id') id: string,
-    @Body() dto: UpdateVisitCategoryDto,
-  ) {
-    return this.visitsService.updateCategory(id, dto);
+  @Patch(':id/categories')
+  updateCategories(@Param('id') id: string, @Body() dto: UpdateVisitCategoriesDto) {
+    return this.visitsService.updateCategories(id, dto);
   }
 
-  // Check-in: nhập Visit ID, chọn loại khám mới hay trả kết quả
   @Post('checkin')
   checkIn(@Body() dto: CheckInDto) {
     return this.visitsService.checkIn(dto);

@@ -24,28 +24,23 @@ export class QueueService {
   ) {}
 
   // ===== Thêm bệnh nhân vào queue khi check-in =====
-  async addToQueue(visit: Visit): Promise<QueueEntry> {
-    // Kiểm tra đã có trong queue chưa
+  // scoreP được tính từ tổng các đối tượng đã chọn (truyền vào từ VisitsService)
+  async addToQueue(visit: Visit, scoreP: number = 0): Promise<QueueEntry> {
     const existing = await this.entryRepo.findOne({
-      where: {
-        visitId: visit.id,
-        status: QueueStatus.WAITING,
-      },
+      where: { visitId: visit.id, status: QueueStatus.WAITING },
     });
     if (existing) return existing;
-
-    const config = await this.configService.getScoreConfig();
 
     const entry = this.entryRepo.create({
       visitId: visit.id,
       visit,
       status: QueueStatus.WAITING,
-      scoreP: visit.category?.scoreP ?? 0,
+      scoreP,
       scoreT: 0,
       scoreS: 0,
       scoreC: 0,
       scoreF: 0,
-      totalScore: visit.category?.scoreP ?? 0,
+      totalScore: scoreP,
       queuedAt: new Date(),
     });
 
@@ -66,7 +61,6 @@ export class QueueService {
       .createQueryBuilder('entry')
       .leftJoinAndSelect('entry.visit', 'visit')
       .leftJoinAndSelect('visit.patient', 'patient')
-      .leftJoinAndSelect('visit.category', 'category')
       .leftJoinAndSelect('entry.slot', 'slot')
       .where('visit.roomId = :roomId', { roomId })
       .andWhere('visit.visitDate = :date', { date: targetDate })
@@ -90,7 +84,6 @@ export class QueueService {
     const waitingEntries = await this.entryRepo
       .createQueryBuilder('entry')
       .leftJoinAndSelect('entry.visit', 'visit')
-      .leftJoinAndSelect('visit.category', 'category')
       .where('visit.roomId = :roomId', { roomId })
       .andWhere('visit.visitDate = :date', { date: targetDate })
       .andWhere('entry.status = :status', { status: QueueStatus.WAITING })
@@ -234,7 +227,7 @@ export class QueueService {
     const activeRooms = await this.entryRepo
       .createQueryBuilder('entry')
       .leftJoin('entry.visit', 'visit')
-      .select('DISTINCT visit.roomId', 'roomId')
+      .select('DISTINCT visit."room_id"', 'roomId')
       .where('visit.visitDate = :date', { date: today })
       .andWhere('entry.status = :status', { status: QueueStatus.WAITING })
       .getRawMany();

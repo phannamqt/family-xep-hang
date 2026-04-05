@@ -27,7 +27,7 @@ export class QueueScheduler {
       const activeRooms = await this.entryRepo
         .createQueryBuilder('entry')
         .leftJoin('entry.visit', 'visit')
-        .select('DISTINCT visit."roomId"', 'roomId')
+        .select('DISTINCT visit."room_id"', 'roomId')
         .where('visit."visitDate" = :date', { date: today })
         .andWhere('entry.status = :status', { status: QueueStatus.WAITING })
         .getRawMany();

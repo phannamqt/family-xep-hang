@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { visitsApi, patientsApi, configApi, roomsApi } from '../../api';
-import type { Visit, Patient, PriorityCategory, ClinicRoom } from '../../types';
 import { format } from 'date-fns';
+import { visitsApi, patientsApi, configApi } from '../../api';
+import type { Visit, Patient, PriorityCategory } from '../../types';
 
 export default function VisitsPage() {
   const qc = useQueryClient();
@@ -10,8 +10,10 @@ export default function VisitsPage() {
   const [showForm, setShowForm] = useState(false);
   const [createdVisit, setCreatedVisit] = useState<Visit | null>(null);
   const [form, setForm] = useState({
-    patientId: '', categoryId: '', roomId: '',
-    appointmentTime: '', visitDate: format(new Date(), 'yyyy-MM-dd'),
+    patientId: '',
+    categoryIds: [] as string[],
+    appointmentTime: '',
+    visitDate: format(new Date(), 'yyyy-MM-dd'),
   });
 
   const { data: visits = [] } = useQuery<Visit[]>({
@@ -26,10 +28,6 @@ export default function VisitsPage() {
     queryKey: ['categories'],
     queryFn: configApi.getCategories,
   });
-  const { data: rooms = [] } = useQuery<ClinicRoom[]>({
-    queryKey: ['rooms'],
-    queryFn: roomsApi.getAll,
-  });
 
   const createMut = useMutation({
     mutationFn: visitsApi.create,
@@ -37,9 +35,18 @@ export default function VisitsPage() {
       qc.invalidateQueries({ queryKey: ['visits'] });
       setCreatedVisit(visit);
       setShowForm(false);
-      setForm({ patientId: '', categoryId: '', roomId: '', appointmentTime: '', visitDate: format(new Date(), 'yyyy-MM-dd') });
+      setForm({ patientId: '', categoryIds: [], appointmentTime: '', visitDate: format(new Date(), 'yyyy-MM-dd') });
     },
   });
+
+  const toggleCategory = (id: string) => {
+    setForm(f => ({
+      ...f,
+      categoryIds: f.categoryIds.includes(id)
+        ? f.categoryIds.filter(c => c !== id)
+        : [...f.categoryIds, id],
+    }));
+  };
 
   return (
     <div className="p-6">
@@ -59,8 +66,11 @@ export default function VisitsPage() {
       {createdVisit && (
         <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
           <div>
-            <div className="text-sm text-green-700 font-medium">Lượt khám đã tạo thành công!</div>
-            <div className="text-2xl font-bold text-green-800 mt-1">{createdVisit.visitCode}</div>
+            <div className="text-sm text-green-700 font-medium">Tạo lượt khám thành công!</div>
+            <div className="text-2xl font-bold text-green-800 font-mono mt-1">{createdVisit.visitCode}</div>
+            <div className="text-xs text-green-600 mt-1">
+              Bệnh nhân mang mã này đến phòng khám để check-in
+            </div>
           </div>
           <div className="flex gap-2">
             <button
@@ -69,7 +79,8 @@ export default function VisitsPage() {
             >
               Copy mã
             </button>
-            <button onClick={() => setCreatedVisit(null)} className="px-3 py-2 border border-green-300 text-green-700 rounded-md text-sm">
+            <button onClick={() => setCreatedVisit(null)}
+              className="px-3 py-2 border border-green-300 text-green-700 rounded-md text-sm">
               Đóng
             </button>
           </div>
@@ -79,55 +90,67 @@ export default function VisitsPage() {
       {/* Create form modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto">
             <h3 className="font-semibold text-gray-800 mb-4">Tạo lượt khám mới</h3>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
-                <label className="text-xs text-gray-500">Bệnh nhân *</label>
+                <label className="text-xs text-gray-500 font-medium">Bệnh nhân *</label>
                 <select className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
                   value={form.patientId} onChange={e => setForm(f => ({ ...f, patientId: e.target.value }))}>
                   <option value="">-- Chọn bệnh nhân --</option>
                   {patients.map(p => (
-                    <option key={p.id} value={p.id}>{p.fullName} {p.phone ? `(${p.phone})` : ''}</option>
+                    <option key={p.id} value={p.id}>{p.fullName}{p.phone ? ` (${p.phone})` : ''}</option>
                   ))}
                 </select>
               </div>
+
               <div>
-                <label className="text-xs text-gray-500">Đối tượng ưu tiên *</label>
-                <select className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-                  value={form.categoryId} onChange={e => setForm(f => ({ ...f, categoryId: e.target.value }))}>
-                  <option value="">-- Chọn đối tượng --</option>
-                  {categories.map(c => (
-                    <option key={c.id} value={c.id}>{c.name} (P={c.scoreP})</option>
+                <label className="text-xs text-gray-500 font-medium">
+                  Đối tượng ưu tiên * <span className="text-blue-600">(chọn nhiều)</span>
+                </label>
+                <div className="mt-1 border border-gray-300 rounded-md divide-y divide-gray-100 max-h-52 overflow-y-auto">
+                  {categories.map(cat => (
+                    <label key={cat.id} className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-50 ${form.categoryIds.includes(cat.id) ? 'bg-blue-50' : ''}`}>
+                      <input
+                        type="checkbox"
+                        checked={form.categoryIds.includes(cat.id)}
+                        onChange={() => toggleCategory(cat.id)}
+                        className="w-4 h-4 text-blue-600"
+                      />
+                      <span className="flex-1 text-sm text-gray-700">{cat.name}</span>
+                      <span className="text-xs font-bold text-blue-700">P={cat.scoreP}</span>
+                    </label>
                   ))}
-                </select>
+                </div>
+                {form.categoryIds.length > 0 && (
+                  <div className="mt-1 text-xs text-blue-600">
+                    Tổng điểm P = {categories
+                      .filter(c => form.categoryIds.includes(c.id))
+                      .reduce((sum, c) => sum + c.scoreP, 0)}
+                  </div>
+                )}
               </div>
+
               <div>
-                <label className="text-xs text-gray-500">Phòng khám *</label>
-                <select className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-                  value={form.roomId} onChange={e => setForm(f => ({ ...f, roomId: e.target.value }))}>
-                  <option value="">-- Chọn phòng --</option>
-                  {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs text-gray-500">Giờ hẹn (tuỳ chọn)</label>
+                <label className="text-xs text-gray-500 font-medium">Giờ hẹn (tuỳ chọn)</label>
                 <input type="datetime-local" className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
                   value={form.appointmentTime} onChange={e => setForm(f => ({ ...f, appointmentTime: e.target.value }))} />
               </div>
+
               <div>
-                <label className="text-xs text-gray-500">Ngày khám</label>
+                <label className="text-xs text-gray-500 font-medium">Ngày khám</label>
                 <input type="date" className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
                   value={form.visitDate} onChange={e => setForm(f => ({ ...f, visitDate: e.target.value }))} />
               </div>
             </div>
-            <div className="flex gap-2 mt-4">
+
+            <div className="flex gap-2 mt-5">
               <button
                 onClick={() => createMut.mutate(form)}
-                disabled={!form.patientId || !form.categoryId || !form.roomId}
+                disabled={!form.patientId || form.categoryIds.length === 0 || createMut.isPending}
                 className="flex-1 bg-blue-600 text-white py-2 rounded-md text-sm hover:bg-blue-700 disabled:opacity-40"
               >
-                Tạo lượt khám
+                {createMut.isPending ? 'Đang tạo...' : 'Tạo lượt khám'}
               </button>
               <button onClick={() => setShowForm(false)}
                 className="px-4 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50">
@@ -160,9 +183,17 @@ export default function VisitsPage() {
                 </td>
                 <td className="px-4 py-3 font-medium text-gray-800">{v.patient?.fullName}</td>
                 <td className="px-4 py-3">
-                  <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">{v.category?.name}</span>
+                  <div className="flex flex-wrap gap-1">
+                    {(v.categories ?? []).map(cat => (
+                      <span key={cat.id} className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">
+                        {cat.name}
+                      </span>
+                    ))}
+                  </div>
                 </td>
-                <td className="px-4 py-3 text-gray-600">{v.room?.name}</td>
+                <td className="px-4 py-3 text-gray-500 text-xs">
+                  {v.room?.name ?? <span className="text-gray-300">Chưa check-in</span>}
+                </td>
                 <td className="px-4 py-3">
                   {v.checkInAt
                     ? <span className="text-green-600 text-xs">✓ {new Date(v.checkInAt).toLocaleTimeString('vi-VN')} ({v.checkInType === 'new' ? 'Khám mới' : 'Trả KQ'})</span>

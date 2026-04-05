@@ -44,10 +44,10 @@ export const visitsApi = {
   getAll: (date?: string) => api.get('/visits', { params: { date } }).then(r => r.data),
   getOne: (id: string) => api.get(`/visits/${id}`).then(r => r.data),
   create: (data: any) => api.post('/visits', data).then(r => r.data),
-  updateCategory: (id: string, categoryId: string) =>
-    api.patch(`/visits/${id}/category`, { categoryId }).then(r => r.data),
-  checkIn: (visitCode: string, type: 'new' | 'result') =>
-    api.post('/visits/checkin', { visitCode, type }).then(r => r.data),
+  updateCategories: (id: string, categoryIds: string[]) =>
+    api.patch(`/visits/${id}/categories`, { categoryIds }).then(r => r.data),
+  checkIn: (visitCode: string, type: 'new' | 'result', roomId: string) =>
+    api.post('/visits/checkin', { visitCode, type, roomId }).then(r => r.data),
 };
 
 // ===== Queue APIs =====

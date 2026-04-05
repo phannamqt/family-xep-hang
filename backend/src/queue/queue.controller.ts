@@ -8,11 +8,16 @@ import {
   Query,
 } from '@nestjs/common';
 import { QueueService } from './queue.service';
+import { QueueGateway } from './queue.gateway';
 import { InviteToRoomDto, UpdateFairnessDto } from './dto/queue.dto';
+import { format } from 'date-fns';
 
 @Controller('queue')
 export class QueueController {
-  constructor(private readonly queueService: QueueService) {}
+  constructor(
+    private readonly queueService: QueueService,
+    private readonly queueGateway: QueueGateway,
+  ) {}
 
   // GET /queue?roomId=xxx&date=2024-04-05
   @Get()
@@ -25,25 +30,37 @@ export class QueueController {
 
   // POST /queue/invite — Mời vào phòng
   @Post('invite')
-  inviteToRoom(@Body() dto: InviteToRoomDto) {
-    return this.queueService.inviteToRoom(dto);
+  async inviteToRoom(@Body() dto: InviteToRoomDto) {
+    const entry = await this.queueService.inviteToRoom(dto);
+    const date = entry.visit?.visitDate ?? format(new Date(), 'yyyy-MM-dd');
+    await this.queueGateway.emitQueueUpdate(entry.visit?.roomId ?? '', date);
+    return entry;
   }
 
   // POST /queue/:id/done — Bác sĩ bấm Xong
   @Post(':id/done')
-  markDone(@Param('id') id: string) {
-    return this.queueService.markDone(id);
+  async markDone(@Param('id') id: string) {
+    const entry = await this.queueService.markDone(id);
+    const date = entry.visit?.visitDate ?? format(new Date(), 'yyyy-MM-dd');
+    await this.queueGateway.emitQueueUpdate(entry.visit?.roomId ?? '', date);
+    return entry;
   }
 
   // POST /queue/:id/skip — Bỏ qua thủ công
   @Post(':id/skip')
-  skip(@Param('id') id: string) {
-    return this.queueService.skipEntry(id);
+  async skip(@Param('id') id: string) {
+    const entry = await this.queueService.skipEntry(id);
+    const date = entry.visit?.visitDate ?? format(new Date(), 'yyyy-MM-dd');
+    await this.queueGateway.emitQueueUpdate(entry.visit?.roomId ?? '', date);
+    return entry;
   }
 
   // PATCH /queue/fairness — Cập nhật điểm F
   @Patch('fairness')
-  updateFairness(@Body() dto: UpdateFairnessDto) {
-    return this.queueService.updateFairness(dto);
+  async updateFairness(@Body() dto: UpdateFairnessDto) {
+    const entry = await this.queueService.updateFairness(dto);
+    const date = entry.visit?.visitDate ?? format(new Date(), 'yyyy-MM-dd');
+    await this.queueGateway.emitQueueUpdate(entry.visit?.roomId ?? '', date);
+    return entry;
   }
 }

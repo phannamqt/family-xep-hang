@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { roomsApi, queueApi } from '../../api';
+import { roomsApi, queueApi, visitsApi } from '../../api';
 import type { ClinicRoom, QueueEntry, DoctorSlot } from '../../types';
 import { useQueueSocket } from '../../hooks/useSocket';
 
@@ -88,6 +88,9 @@ function WaitingColumn({ entries, room, date }: {
   const qc = useQueryClient();
   const [inviteModal, setInviteModal] = useState<QueueEntry | null>(null);
   const [fairnessInput, setFairnessInput] = useState<Record<string, string>>({});
+  const [checkInCode, setCheckInCode] = useState('');
+  const [checkInType, setCheckInType] = useState<'new' | 'result'>('new');
+  const [checkInMsg, setCheckInMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const skipMut = useMutation({
     mutationFn: (id: string) => queueApi.skip(id),
@@ -100,12 +103,57 @@ function WaitingColumn({ entries, room, date }: {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['queue'] }),
   });
 
+  const checkInMut = useMutation({
+    mutationFn: () => visitsApi.checkIn(checkInCode.trim().toUpperCase(), checkInType, room!.id),
+    onSuccess: (v: any) => {
+      setCheckInMsg({ ok: true, text: `✓ ${v.patient?.fullName} đã vào hàng chờ` });
+      setCheckInCode('');
+      setTimeout(() => setCheckInMsg(null), 3000);
+    },
+    onError: (e: any) => {
+      setCheckInMsg({ ok: false, text: e?.response?.data?.message ?? 'Check-in thất bại' });
+    },
+  });
+
   return (
     <div className="flex-1 flex flex-col border-r border-gray-200 bg-gray-50 overflow-hidden">
       <div className="px-4 py-3 bg-white border-b border-gray-200">
         <h3 className="font-semibold text-gray-700">
           Chờ khám <span className="text-blue-600 ml-1">{entries.length}</span>
         </h3>
+      </div>
+
+      {/* Check-in inline */}
+      <div className="px-3 py-2 bg-blue-50 border-b border-blue-100">
+        <div className="flex gap-1">
+          <input
+            className="flex-1 px-2 py-1.5 border border-gray-300 rounded text-xs font-mono uppercase"
+            placeholder="Mã lượt khám..."
+            value={checkInCode}
+            onChange={e => setCheckInCode(e.target.value.toUpperCase())}
+            onKeyDown={e => e.key === 'Enter' && checkInCode && checkInMut.mutate()}
+          />
+          <select
+            className="px-1.5 py-1.5 border border-gray-300 rounded text-xs"
+            value={checkInType}
+            onChange={e => setCheckInType(e.target.value as 'new' | 'result')}
+          >
+            <option value="new">Khám</option>
+            <option value="result">Trả KQ</option>
+          </select>
+          <button
+            onClick={() => checkInMut.mutate()}
+            disabled={!checkInCode.trim() || !room}
+            className="px-2 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-40"
+          >
+            Check-in
+          </button>
+        </div>
+        {checkInMsg && (
+          <div className={`mt-1 text-xs px-2 py-1 rounded ${checkInMsg.ok ? 'text-green-700 bg-green-50' : 'text-red-600 bg-red-50'}`}>
+            {checkInMsg.text}
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
@@ -230,7 +278,7 @@ function InviteModal({ entry, room, onClose }: {
   room: ClinicRoom;
   onClose: () => void;
 }) {
-  const qc = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
   const { data: availableSlots = [] } = useQuery<DoctorSlot[]>({
     queryKey: ['available-slots', room.id],
     queryFn: () => roomsApi.getAvailableSlots(room.id),
@@ -238,10 +286,8 @@ function InviteModal({ entry, room, onClose }: {
 
   const inviteMut = useMutation({
     mutationFn: (slotId: string) => queueApi.invite(entry.id, slotId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['queue'] });
-      onClose();
-    },
+    onSuccess: () => onClose(),
+    onError: (e: any) => setError(e?.response?.data?.message ?? 'Lỗi mời vào phòng'),
   });
 
   return (
@@ -250,13 +296,19 @@ function InviteModal({ entry, room, onClose }: {
         <h3 className="font-semibold text-gray-800 mb-1">Mời vào phòng</h3>
         <p className="text-sm text-gray-500 mb-4">Chọn slot bác sĩ cho <strong>{entry.visit?.patient?.fullName}</strong></p>
 
+        {error && (
+          <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">{error}</div>
+        )}
+
         {availableSlots.length === 0 ? (
           <div className="text-center py-4 text-gray-400 text-sm">Không có slot trống</div>
         ) : (
           <div className="space-y-2">
             {availableSlots.map(slot => (
-              <button key={slot.id} onClick={() => inviteMut.mutate(slot.id)}
-                className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors">
+              <button key={slot.id}
+                onClick={() => { setError(null); inviteMut.mutate(slot.id); }}
+                disabled={inviteMut.isPending}
+                className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors disabled:opacity-50">
                 <div className="font-medium text-sm">Slot {slot.slotNumber}</div>
                 {slot.doctorName && <div className="text-xs text-gray-500">BS. {slot.doctorName}</div>}
               </button>

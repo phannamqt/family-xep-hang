@@ -9,13 +9,12 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Patient } from '../../patients/entities/patient.entity';
-import { PriorityCategory } from '../../config/entities/priority-category.entity';
 import { ClinicRoom } from '../../rooms/entities/clinic-room.entity';
 import { QueueEntry } from '../../queue/entities/queue-entry.entity';
 
 export enum CheckInType {
-  NEW = 'new',       // Khám mới
-  RESULT = 'result', // Trả kết quả
+  NEW = 'new',
+  RESULT = 'result',
 }
 
 @Entity('visits')
@@ -23,7 +22,6 @@ export class Visit {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // Short code dạng VK-20240405-001, hiển thị cho user copy
   @Column({ unique: true, length: 30 })
   visitCode: string;
 
@@ -34,38 +32,29 @@ export class Visit {
   @Column({ name: 'patient_id' })
   patientId: string;
 
-  @ManyToOne(() => PriorityCategory)
-  @JoinColumn({ name: 'category_id' })
-  category: PriorityCategory;
+  // Chọn nhiều đối tượng ưu tiên — lưu mảng UUID
+  @Column({ type: 'uuid', array: true, default: '{}' })
+  categoryIds: string[];
 
-  @Column({ name: 'category_id' })
-  categoryId: string;
-
-  @ManyToOne(() => ClinicRoom)
+  // Phòng khám — nullable, chỉ được gán khi check-in
+  @ManyToOne(() => ClinicRoom, { nullable: true })
   @JoinColumn({ name: 'room_id' })
   room: ClinicRoom;
 
-  @Column({ name: 'room_id' })
+  @Column({ name: 'room_id', nullable: true })
   roomId: string;
 
-  // Giờ hẹn (optional, dùng tính C score)
   @Column({ type: 'timestamptz', nullable: true })
   appointmentTime: Date;
 
-  @Column({
-    type: 'enum',
-    enum: CheckInType,
-    nullable: true,
-  })
+  @Column({ type: 'enum', enum: CheckInType, nullable: true })
   checkInType: CheckInType;
 
-  // Thời điểm check-in thực tế
   @Column({ type: 'timestamptz', nullable: true })
   checkInAt: Date;
 
-  // Ngày khám (dùng để lọc theo ngày trên queue board)
   @Column({ type: 'date' })
-  visitDate: string; // 'YYYY-MM-DD'
+  visitDate: string;
 
   @OneToMany(() => QueueEntry, (entry) => entry.visit)
   queueEntries: QueueEntry[];

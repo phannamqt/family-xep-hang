@@ -4,6 +4,8 @@ import {
   IsOptional,
   IsDateString,
   IsEnum,
+  IsArray,
+  ArrayMinSize,
 } from 'class-validator';
 import { CheckInType } from '../entities/visit.entity';
 
@@ -11,24 +13,27 @@ export class CreateVisitDto {
   @IsUUID()
   patientId: string;
 
-  @IsUUID()
-  categoryId: string;
+  // Nhiều đối tượng ưu tiên
+  @IsArray()
+  @IsUUID('all', { each: true })
+  @ArrayMinSize(1)
+  categoryIds: string[];
 
-  @IsUUID()
-  roomId: string;
+  // Không cần roomId khi tạo lượt khám
+  @IsDateString()
+  @IsOptional()
+  appointmentTime?: string;
 
   @IsDateString()
   @IsOptional()
-  appointmentTime?: string; // ISO datetime string
-
-  @IsDateString()
-  @IsOptional()
-  visitDate?: string; // 'YYYY-MM-DD', mặc định ngày hôm nay
+  visitDate?: string;
 }
 
-export class UpdateVisitCategoryDto {
-  @IsUUID()
-  categoryId: string;
+export class UpdateVisitCategoriesDto {
+  @IsArray()
+  @IsUUID('all', { each: true })
+  @ArrayMinSize(1)
+  categoryIds: string[];
 }
 
 export class CheckInDto {
@@ -36,5 +41,9 @@ export class CheckInDto {
   visitCode: string;
 
   @IsEnum(CheckInType)
-  type: CheckInType; // 'new' | 'result'
+  type: CheckInType;
+
+  // Room được chọn tại màn hình xếp hàng
+  @IsUUID()
+  roomId: string;
 }

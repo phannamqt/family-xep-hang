@@ -1,15 +1,21 @@
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { visitsApi } from '../../api';
-import type { Visit } from '../../types';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { visitsApi, roomsApi } from '../../api';
+import type { Visit, ClinicRoom } from '../../types';
 
 export default function CheckInPage() {
   const [code, setCode] = useState('');
   const [type, setType] = useState<'new' | 'result'>('new');
+  const [roomId, setRoomId] = useState('');
   const [result, setResult] = useState<{ visit: Visit; success: boolean; message: string } | null>(null);
 
+  const { data: rooms = [] } = useQuery<ClinicRoom[]>({
+    queryKey: ['rooms'],
+    queryFn: roomsApi.getAll,
+  });
+
   const checkInMut = useMutation({
-    mutationFn: () => visitsApi.checkIn(code.trim().toUpperCase(), type),
+    mutationFn: () => visitsApi.checkIn(code.trim().toUpperCase(), type, roomId),
     onSuccess: (visit: Visit) => {
       setResult({
         visit,
@@ -29,7 +35,7 @@ export default function CheckInPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!code.trim()) return;
+    if (!code.trim() || !roomId) return;
     setResult(null);
     checkInMut.mutate();
   };
@@ -53,22 +59,28 @@ export default function CheckInPage() {
             </div>
 
             <div>
+              <label className="text-sm font-medium text-gray-700">Phòng khám *</label>
+              <select
+                className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm"
+                value={roomId}
+                onChange={e => setRoomId(e.target.value)}
+              >
+                <option value="">-- Chọn phòng --</option>
+                {rooms.map(r => (
+                  <option key={r.id} value={r.id}>{r.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
               <label className="text-sm font-medium text-gray-700">Loại check-in</label>
               <div className="mt-2 flex gap-3">
                 {[
                   { value: 'new', label: '🏥 Khám mới', desc: 'Lần đầu đến trong ngày' },
                   { value: 'result', label: '📋 Trả kết quả', desc: 'Quay lại nhận kết quả' },
                 ].map(opt => (
-                  <button
-                    type="button"
-                    key={opt.value}
-                    onClick={() => setType(opt.value as 'new' | 'result')}
-                    className={`flex-1 p-3 rounded-lg border-2 text-left transition-colors ${
-                      type === opt.value
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
+                  <button type="button" key={opt.value} onClick={() => setType(opt.value as 'new' | 'result')}
+                    className={`flex-1 p-3 rounded-lg border-2 text-left transition-colors ${type === opt.value ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
                     <div className="font-medium text-sm">{opt.label}</div>
                     <div className="text-xs text-gray-500 mt-0.5">{opt.desc}</div>
                   </button>
@@ -78,7 +90,7 @@ export default function CheckInPage() {
 
             <button
               type="submit"
-              disabled={!code.trim() || checkInMut.isPending}
+              disabled={!code.trim() || !roomId || checkInMut.isPending}
               className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-40 transition-colors"
             >
               {checkInMut.isPending ? 'Đang xử lý...' : 'Check-in'}
@@ -94,16 +106,11 @@ export default function CheckInPage() {
                 <div className="mt-2 text-xs text-gray-600 space-y-1">
                   <div>Bệnh nhân: <strong>{result.visit.patient?.fullName}</strong></div>
                   <div>Phòng: <strong>{result.visit.room?.name}</strong></div>
-                  <div>Đối tượng: <strong>{result.visit.category?.name}</strong></div>
                 </div>
               )}
             </div>
           )}
         </div>
-
-        <p className="text-center text-xs text-gray-400 mt-4">
-          Nhập mã lượt khám từ phiếu hoặc tin nhắn để check-in vào hàng chờ
-        </p>
       </div>
     </div>
   );

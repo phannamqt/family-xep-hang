@@ -53,8 +53,10 @@ export interface Visit {
   id: string;
   visitCode: string;
   patient: Patient;
-  category: PriorityCategory;
-  room: ClinicRoom;
+  categoryIds: string[];
+  categories: PriorityCategory[]; // populated by BE
+  room?: ClinicRoom;
+  roomId?: string;
   appointmentTime?: string;
   checkInType?: 'new' | 'result';
   checkInAt?: string;
