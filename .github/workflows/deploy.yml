@@ -82,7 +82,7 @@ jobs:
             upsert_env DB_HOST         "${{ secrets.DB_HOST }}"
             upsert_env DB_USERNAME     "${{ secrets.DB_USERNAME }}"
             upsert_env DB_PASSWORD     "${{ secrets.DB_PASSWORD }}"
-            upsert_env DB_DATABASE     "${{ secrets.DB_NAME }}"
+            upsert_env DB_DATABASE     "${{ secrets.DB_DATABASE }}"
             upsert_env JWT_SECRET      "${{ secrets.JWT_SECRET }}"
 
             # --- 2. Pull image mới nhất ---
