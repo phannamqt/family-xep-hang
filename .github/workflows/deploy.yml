@@ -78,13 +78,12 @@ jobs:
             }
 
             upsert_env NODE_ENV        production
-            upsert_env APP_PORT        3000
-            upsert_env APP_URL         https://family-xep-hang.phannam.com
+            upsert_env PORT            3000
             upsert_env DB_HOST         "${{ secrets.DB_HOST }}"
             upsert_env DB_USERNAME     "${{ secrets.DB_USERNAME }}"
             upsert_env DB_PASSWORD     "${{ secrets.DB_PASSWORD }}"
             upsert_env DB_NAME         "${{ secrets.DB_NAME }}"
-            upsert_env UPLOAD_DIR      /app/uploads
+            upsert_env JWT_SECRET      "${{ secrets.JWT_SECRET }}"
 
             # --- 2. Pull image mới nhất ---
             echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
