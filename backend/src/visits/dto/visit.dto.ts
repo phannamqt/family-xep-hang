@@ -7,6 +7,7 @@ import {
   IsArray,
   ArrayMinSize,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { CheckInType } from '../entities/visit.entity';
 
 export class CreateVisitDto {
@@ -20,6 +21,7 @@ export class CreateVisitDto {
   categoryIds: string[];
 
   // Không cần roomId khi tạo lượt khám
+  @Transform(({ value }) => value || undefined)
   @IsDateString()
   @IsOptional()
   appointmentTime?: string;

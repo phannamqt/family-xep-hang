@@ -337,7 +337,7 @@ function InRoomColumn({ entries, room, waiting }: {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['queue'] }),
   });
 
-  const slots = room?.slots ?? [];
+  const slots = [...(room?.slots ?? [])].sort((a, b) => a.slotNumber - b.slotNumber);
 
   return (
     <div className="flex-1 flex flex-col border-r border-gray-200 bg-gray-50 overflow-hidden">

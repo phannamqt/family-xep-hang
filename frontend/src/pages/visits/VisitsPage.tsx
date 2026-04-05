@@ -146,7 +146,11 @@ export default function VisitsPage() {
 
             <div className="flex gap-2 mt-5">
               <button
-                onClick={() => createMut.mutate(form)}
+                onClick={() => {
+                const payload: any = { ...form };
+                if (!payload.appointmentTime) delete payload.appointmentTime;
+                createMut.mutate(payload);
+              }}
                 disabled={!form.patientId || form.categoryIds.length === 0 || createMut.isPending}
                 className="flex-1 bg-blue-600 text-white py-2 rounded-md text-sm hover:bg-blue-700 disabled:opacity-40"
               >

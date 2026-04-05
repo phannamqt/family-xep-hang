@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { configApi, roomsApi } from '../../api';
-import type { PriorityCategory, ScoreConfig, ClinicRoom } from '../../types';
+import type { PriorityCategory, ScoreConfig, ClinicRoom, DoctorSlot } from '../../types';
 
 export default function ConfigPage() {
   const [tab, setTab] = useState<'categories' | 'score' | 'rooms'>('categories');
@@ -319,26 +319,52 @@ function RoomsTab() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            {(room.slots ?? []).map(slot => (
-              <div key={slot.id} className={`border rounded-lg p-3 ${slot.isAbsent ? 'border-red-200 bg-red-50' : 'border-gray-200'}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-sm text-gray-700">Slot {slot.slotNumber}</span>
-                  <label className="flex items-center gap-1 text-xs cursor-pointer">
-                    <input type="checkbox" checked={slot.isAbsent}
-                      onChange={e => updateSlotMut.mutate({ roomId: room.id, slotId: slot.id, data: { isAbsent: e.target.checked } })}
-                    />
-                    <span className="text-red-500">Vắng</span>
-                  </label>
-                </div>
-                <input placeholder="Tên bác sĩ" className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                  defaultValue={slot.doctorName ?? ''}
-                  onBlur={e => updateSlotMut.mutate({ roomId: room.id, slotId: slot.id, data: { doctorName: e.target.value } })}
-                />
-              </div>
+            {[...(room.slots ?? [])].sort((a, b) => a.slotNumber - b.slotNumber).map(slot => (
+              <SlotCard
+                key={slot.id}
+                slot={slot}
+                roomId={room.id}
+                onUpdate={(slotId, data) => updateSlotMut.mutate({ roomId: room.id, slotId, data })}
+              />
             ))}
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ===== Slot card với local state để tránh input bị reset khi rooms re-fetch =====
+function SlotCard({ slot, roomId, onUpdate }: {
+  slot: DoctorSlot;
+  roomId: string;
+  onUpdate: (slotId: string, data: { doctorName?: string; isAbsent?: boolean }) => void;
+}) {
+  const [doctorName, setDoctorName] = useState(slot.doctorName ?? '');
+
+  // Sync nếu slot data từ server thay đổi (ví dụ reload trang)
+  useEffect(() => {
+    setDoctorName(slot.doctorName ?? '');
+  }, [slot.doctorName]);
+
+  return (
+    <div className={`border rounded-lg p-3 ${slot.isAbsent ? 'border-red-200 bg-red-50' : 'border-gray-200'}`}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-medium text-sm text-gray-700">Slot {slot.slotNumber}</span>
+        <label className="flex items-center gap-1 text-xs cursor-pointer">
+          <input type="checkbox" checked={slot.isAbsent}
+            onChange={e => onUpdate(slot.id, { isAbsent: e.target.checked })}
+          />
+          <span className="text-red-500">Vắng</span>
+        </label>
+      </div>
+      <input
+        placeholder="Tên bác sĩ"
+        className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+        value={doctorName}
+        onChange={e => setDoctorName(e.target.value)}
+        onBlur={() => onUpdate(slot.id, { doctorName })}
+      />
     </div>
   );
 }
