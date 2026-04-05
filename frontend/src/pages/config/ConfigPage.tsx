@@ -323,7 +323,6 @@ function RoomsTab() {
               <SlotCard
                 key={slot.id}
                 slot={slot}
-                roomId={room.id}
                 onUpdate={(slotId, data) => updateSlotMut.mutate({ roomId: room.id, slotId, data })}
               />
             ))}
@@ -335,9 +334,8 @@ function RoomsTab() {
 }
 
 // ===== Slot card với local state để tránh input bị reset khi rooms re-fetch =====
-function SlotCard({ slot, roomId, onUpdate }: {
+function SlotCard({ slot, onUpdate }: {
   slot: DoctorSlot;
-  roomId: string;
   onUpdate: (slotId: string, data: { doctorName?: string; isAbsent?: boolean }) => void;
 }) {
   const [doctorName, setDoctorName] = useState(slot.doctorName ?? '');

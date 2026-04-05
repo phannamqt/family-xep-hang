@@ -9,7 +9,7 @@ function calcAge(dob: string) {
 }
 
 const emptyForm = {
-  fullName: '', dateOfBirth: '', gender: 'other' as const,
+  fullName: '', dateOfBirth: '', gender: 'other' as 'male' | 'female' | 'other',
   phone: '', idCard: '', address: '', notes: '',
 };
 

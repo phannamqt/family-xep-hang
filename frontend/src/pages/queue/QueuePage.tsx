@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { roomsApi, queueApi, visitsApi } from '../../api';
@@ -61,14 +61,12 @@ export default function QueuePage() {
           <WaitingColumn
             entries={waiting}
             room={room}
-            date={date}
           />
 
           {/* Cột 2: Đang khám */}
           <InRoomColumn
             entries={inRoom}
             room={room}
-            waiting={waiting}
           />
 
           {/* Cột 3: Đã khám */}
@@ -80,10 +78,9 @@ export default function QueuePage() {
 }
 
 // ===== Cột Chờ khám =====
-function WaitingColumn({ entries, room, date }: {
+function WaitingColumn({ entries, room }: {
   entries: QueueEntry[];
   room?: ClinicRoom;
-  date: string;
 }) {
   const qc = useQueryClient();
   const [inviteModal, setInviteModal] = useState<QueueEntry | null>(null);
@@ -214,7 +211,7 @@ function WaitingCard({ entry, rank, fairnessValue, onFairnessChange, onFairnessS
         <div className="flex-1 ml-2">
           <div className="font-medium text-sm text-gray-800">{entry.visit?.patient?.fullName}</div>
           <div className="text-xs text-gray-400 mt-0.5">
-            {entry.visit?.category?.name} · {waitMin} phút chờ
+            {(entry.visit?.categories ?? []).map(c => c.name).join(', ') || '—'} · {waitMin} phút chờ
           </div>
         </div>
 
@@ -325,10 +322,9 @@ function InviteModal({ entry, room, onClose }: {
 }
 
 // ===== Cột Đang khám =====
-function InRoomColumn({ entries, room, waiting }: {
+function InRoomColumn({ entries, room }: {
   entries: QueueEntry[];
   room?: ClinicRoom;
-  waiting: QueueEntry[];
 }) {
   const qc = useQueryClient();
 
@@ -363,7 +359,7 @@ function InRoomColumn({ entries, room, waiting }: {
               {patient ? (
                 <div>
                   <div className="font-medium text-sm text-gray-800">{patient.visit?.patient?.fullName}</div>
-                  <div className="text-xs text-gray-400">{patient.visit?.category?.name}</div>
+                  <div className="text-xs text-gray-400">{(patient.visit?.categories ?? []).map(c => c.name).join(', ') || '—'}</div>
                   <div className="text-xs text-gray-400">
                     Vào lúc: {patient.startedAt ? new Date(patient.startedAt).toLocaleTimeString('vi-VN') : '—'}
                   </div>
@@ -401,7 +397,7 @@ function DoneColumn({ entries }: { entries: QueueEntry[] }) {
         {entries.map(entry => (
           <div key={entry.id} className="bg-white rounded-lg border border-gray-200 p-3">
             <div className="font-medium text-sm text-gray-700">{entry.visit?.patient?.fullName}</div>
-            <div className="text-xs text-gray-400">{entry.visit?.category?.name}</div>
+            <div className="text-xs text-gray-400">{(entry.visit?.categories ?? []).map(c => c.name).join(', ') || '—'}</div>
             <div className="text-xs text-gray-400 mt-0.5">
               Xong lúc: {entry.finishedAt ? new Date(entry.finishedAt).toLocaleTimeString('vi-VN') : '—'}
             </div>
