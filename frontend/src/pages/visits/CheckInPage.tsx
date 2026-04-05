@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { visitsApi } from '../../api';
-import { Visit } from '../../types';
+import type { Visit } from '../../types';
 
 export default function CheckInPage() {
   const [code, setCode] = useState('');

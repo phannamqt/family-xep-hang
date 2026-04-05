@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { QueueEntry } from '../types';
+import type { QueueEntry } from '../types';
 
 let socket: Socket | null = null;
 

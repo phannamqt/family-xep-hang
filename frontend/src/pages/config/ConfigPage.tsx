@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { configApi, roomsApi } from '../../api';
-import { PriorityCategory, ScoreConfig, ClinicRoom } from '../../types';
+import type { PriorityCategory, ScoreConfig, ClinicRoom } from '../../types';
 
 export default function ConfigPage() {
   const [tab, setTab] = useState<'categories' | 'score' | 'rooms'>('categories');

@@ -14,7 +14,11 @@ import { QueueModule } from './queue/queue.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    // Tìm .env ở thư mục backend/ trước, fallback lên thư mục gốc project
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env', '../.env'],
+    }),
 
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
@@ -35,9 +39,7 @@ import { QueueModule } from './queue/queue.module';
         entities: [join(__dirname, '**', '*.entity.{ts,js}')],
         synchronize: config.get('NODE_ENV') !== 'production',
         logging: config.get('NODE_ENV') === 'development',
-        ssl: config.get('NODE_ENV') === 'production'
-          ? { rejectUnauthorized: false }
-          : false,
+        ssl: false,
       }),
     }),
 

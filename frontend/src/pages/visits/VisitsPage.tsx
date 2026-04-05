@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { visitsApi, patientsApi, configApi, roomsApi } from '../../api';
-import { Visit, Patient, PriorityCategory, ClinicRoom } from '../../types';
+import type { Visit, Patient, PriorityCategory, ClinicRoom } from '../../types';
 import { format } from 'date-fns';
 
 export default function VisitsPage() {

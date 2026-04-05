@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { roomsApi, queueApi } from '../../api';
-import { ClinicRoom, QueueEntry, DoctorSlot } from '../../types';
+import type { ClinicRoom, QueueEntry, DoctorSlot } from '../../types';
 import { useQueueSocket } from '../../hooks/useSocket';
 
 export default function QueuePage() {

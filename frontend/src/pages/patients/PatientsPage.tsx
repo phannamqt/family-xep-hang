@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { patientsApi } from '../../api';
-import { Patient } from '../../types';
+import type { Patient } from '../../types';
 
 function calcAge(dob: string) {
   const diff = Date.now() - new Date(dob).getTime();
