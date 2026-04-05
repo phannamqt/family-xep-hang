@@ -5,7 +5,8 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm install --legacy-peer-deps
 COPY frontend/ ./
-RUN npm run build
+# Tạo thư mục backend/public để vite outDir ../backend/public hoạt động
+RUN mkdir -p /app/backend/public && npm run build
 
 # ===== Stage 2: Build Backend =====
 FROM node:20-alpine AS backend-builder
@@ -15,7 +16,7 @@ COPY backend/package*.json ./
 RUN npm install --legacy-peer-deps
 COPY backend/ ./
 # Copy frontend build vào backend/public
-COPY --from=frontend-builder /app/frontend/dist ./public
+COPY --from=frontend-builder /app/backend/public ./public
 RUN npm run build
 
 # ===== Stage 3: Production =====
