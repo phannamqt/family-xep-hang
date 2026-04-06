@@ -35,7 +35,12 @@ export class QueueService {
     checkInType: CheckInType,
   ): Promise<QueueEntry> {
     const existing = await this.entryRepo.findOne({
-      where: { visitId: visit.id, roomId, checkInType, status: QueueStatus.WAITING },
+      where: {
+        visitId: visit.id,
+        roomId,
+        checkInType,
+        status: QueueStatus.WAITING,
+      },
     });
     if (existing) return existing;
 
@@ -141,7 +146,8 @@ export class QueueService {
       where: { id: dto.queueEntryId, status: QueueStatus.WAITING },
       relations: ['visit'],
     });
-    if (!entry) throw new NotFoundException('Không tìm thấy bệnh nhân trong hàng chờ');
+    if (!entry)
+      throw new NotFoundException('Không tìm thấy bệnh nhân trong hàng chờ');
 
     entry.status = QueueStatus.IN_ROOM;
     entry.slotId = dto.slotId;
@@ -155,7 +161,8 @@ export class QueueService {
       where: { id: entryId, status: QueueStatus.IN_ROOM },
       relations: ['visit'],
     });
-    if (!entry) throw new NotFoundException('Không tìm thấy ca khám đang diễn ra');
+    if (!entry)
+      throw new NotFoundException('Không tìm thấy ca khám đang diễn ra');
 
     entry.status = QueueStatus.DONE;
     entry.finishedAt = new Date();
@@ -173,7 +180,8 @@ export class QueueService {
       where: { id: entryId, status: QueueStatus.WAITING },
       relations: ['visit'],
     });
-    if (!entry) throw new NotFoundException('Không tìm thấy bệnh nhân trong hàng chờ');
+    if (!entry)
+      throw new NotFoundException('Không tìm thấy bệnh nhân trong hàng chờ');
 
     const config = await this.configService.getScoreConfig();
 
@@ -205,7 +213,12 @@ export class QueueService {
     const breakdown = this.scoreService.calculate(entry, config);
 
     entry.scoreF = dto.scoreF;
-    entry.totalScore = breakdown.scoreP + breakdown.scoreT + breakdown.scoreS + breakdown.scoreC + dto.scoreF;
+    entry.totalScore =
+      breakdown.scoreP +
+      breakdown.scoreT +
+      breakdown.scoreS +
+      breakdown.scoreC +
+      dto.scoreF;
 
     const saved = await this.entryRepo.save(entry);
     await this.recalculateQueue(entry.roomId, entry.visit.visitDate);
@@ -214,7 +227,11 @@ export class QueueService {
 
   // ===== Cập nhật P score khi thay đổi đối tượng trên lượt khám =====
   // Cập nhật tất cả entries WAITING của visit này (có thể nhiều phòng)
-  async updatePScore(visitId: string, newScoreP: number, visitDate: string): Promise<void> {
+  async updatePScore(
+    visitId: string,
+    newScoreP: number,
+    visitDate: string,
+  ): Promise<void> {
     const entries = await this.entryRepo.find({
       where: { visitId, status: QueueStatus.WAITING },
     });
@@ -224,7 +241,12 @@ export class QueueService {
     for (const entry of entries) {
       const breakdown = this.scoreService.calculate(entry, config);
       entry.scoreP = newScoreP;
-      entry.totalScore = newScoreP + breakdown.scoreT + breakdown.scoreS + breakdown.scoreC + entry.scoreF;
+      entry.totalScore =
+        newScoreP +
+        breakdown.scoreT +
+        breakdown.scoreS +
+        breakdown.scoreC +
+        entry.scoreF;
       await this.entryRepo.save(entry);
       await this.recalculateQueue(entry.roomId, visitDate);
     }
