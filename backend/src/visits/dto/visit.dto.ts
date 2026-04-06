@@ -36,6 +36,18 @@ export class UpdateVisitCategoriesDto {
   categoryIds: string[];
 }
 
+export class UpdateVisitDto {
+  @IsArray({ message: 'Danh sách đối tượng ưu tiên phải là mảng' })
+  @IsUUID('all', { each: true, message: 'ID đối tượng ưu tiên không hợp lệ' })
+  @ArrayMinSize(1, { message: 'Phải chọn ít nhất 1 đối tượng ưu tiên' })
+  categoryIds: string[];
+
+  @Transform(({ value }) => value || undefined)
+  @IsDateString({}, { message: 'Giờ hẹn không đúng định dạng ISO 8601' })
+  @IsOptional()
+  appointmentTime?: string;
+}
+
 export class CheckInDto {
   @IsString({ message: 'Mã lượt khám không được để trống' })
   visitCode: string;

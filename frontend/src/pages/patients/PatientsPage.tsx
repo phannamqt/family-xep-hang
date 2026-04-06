@@ -14,10 +14,18 @@ const emptyForm = {
   phone: '', idCard: '', address: '', notes: '',
 };
 
+function validateForm(form: typeof emptyForm) {
+  const errors: Partial<Record<keyof typeof emptyForm, string>> = {};
+  if (!form.fullName.trim()) errors.fullName = 'Vui lòng nhập họ tên';
+  if (!form.dateOfBirth) errors.dateOfBirth = 'Vui lòng chọn ngày sinh';
+  return errors;
+}
+
 export default function PatientsPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [form, setForm] = useState({ ...emptyForm });
+  const [errors, setErrors] = useState<Partial<Record<keyof typeof emptyForm, string>>>({});
   const [editId, setEditId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
 
@@ -31,6 +39,7 @@ export default function PatientsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['patients'] });
       setForm({ ...emptyForm });
+      setErrors({});
       setEditId(null);
       setShowForm(false);
       toast.success(editId ? 'Đã cập nhật bệnh nhân' : 'Đã thêm bệnh nhân mới');
@@ -49,6 +58,7 @@ export default function PatientsPage() {
 
   const startEdit = (p: Patient) => {
     setEditId(p.id);
+    setErrors({});
     setForm({
       fullName: p.fullName, dateOfBirth: p.dateOfBirth, gender: p.gender,
       phone: p.phone ?? '', idCard: p.idCard ?? '', address: p.address ?? '', notes: p.notes ?? '',
@@ -60,7 +70,7 @@ export default function PatientsPage() {
     <div className="p-4 md:p-6">
       <div className="flex items-center justify-between mb-4 gap-2">
         <h2 className="text-lg md:text-xl font-bold text-gray-800">Bệnh nhân</h2>
-        <button onClick={() => { setShowForm(true); setEditId(null); setForm({ ...emptyForm }); }}
+        <button onClick={() => { setShowForm(true); setEditId(null); setForm({ ...emptyForm }); setErrors({}); }}
           className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
           + Thêm
         </button>
@@ -81,14 +91,22 @@ export default function PatientsPage() {
             <div className="space-y-3">
               <div>
                 <label className="text-xs text-gray-500 font-medium">Họ và tên *</label>
-                <input className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm"
-                  value={form.fullName} onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))} />
+                <input
+                  className={`w-full mt-1 px-3 py-2.5 border rounded-lg text-sm ${errors.fullName ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                  value={form.fullName}
+                  onChange={e => { setForm(f => ({ ...f, fullName: e.target.value })); setErrors(er => ({ ...er, fullName: undefined })); }}
+                />
+                {errors.fullName && <p className="text-xs text-red-500 mt-1">{errors.fullName}</p>}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-gray-500 font-medium">Ngày sinh *</label>
-                  <input type="date" className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm"
-                    value={form.dateOfBirth} onChange={e => setForm(f => ({ ...f, dateOfBirth: e.target.value }))} />
+                  <input type="date"
+                    className={`w-full mt-1 px-3 py-2.5 border rounded-lg text-sm ${errors.dateOfBirth ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                    value={form.dateOfBirth}
+                    onChange={e => { setForm(f => ({ ...f, dateOfBirth: e.target.value })); setErrors(er => ({ ...er, dateOfBirth: undefined })); }}
+                  />
+                  {errors.dateOfBirth && <p className="text-xs text-red-500 mt-1">{errors.dateOfBirth}</p>}
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 font-medium">Giới tính</label>
@@ -124,7 +142,13 @@ export default function PatientsPage() {
               </div>
             </div>
             <div className="flex gap-2 mt-4">
-              <button onClick={() => saveMut.mutate(form)} disabled={saveMut.isPending}
+              <button
+                onClick={() => {
+                  const errs = validateForm(form);
+                  if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+                  saveMut.mutate(form);
+                }}
+                disabled={saveMut.isPending}
                 className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
                 {saveMut.isPending ? 'Đang lưu...' : (editId ? 'Cập nhật' : 'Thêm')}
               </button>

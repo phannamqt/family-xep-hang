@@ -8,7 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { format } from 'date-fns';
 import { Visit, CheckInType } from './entities/visit.entity';
-import { CreateVisitDto, CheckInDto, UpdateVisitCategoriesDto } from './dto/visit.dto';
+import { CreateVisitDto, CheckInDto, UpdateVisitCategoriesDto, UpdateVisitDto } from './dto/visit.dto';
 import { PriorityCategory } from '../config/entities/priority-category.entity';
 import { QueueService } from '../queue/queue.service';
 import { QueueGateway } from '../queue/queue.gateway';
@@ -74,6 +74,42 @@ export class VisitsService {
     });
     const saved = await this.visitRepo.save(visit);
     return this.findOne(saved.id);
+  }
+
+  async update(id: string, dto: UpdateVisitDto) {
+    const visit = await this.visitRepo.findOne({ where: { id } });
+    if (!visit) throw new NotFoundException(`Không tìm thấy lượt khám #${id}`);
+
+    const categoriesChanged =
+      JSON.stringify([...dto.categoryIds].sort()) !==
+      JSON.stringify([...(visit.categoryIds ?? [])].sort());
+    const appointmentChanged =
+      (dto.appointmentTime ?? '') !==
+      (visit.appointmentTime
+        ? visit.appointmentTime.toISOString().slice(0, 16)
+        : '');
+
+    visit.categoryIds = dto.categoryIds;
+    visit.appointmentTime = dto.appointmentTime ? new Date(dto.appointmentTime) : null;
+    await this.visitRepo.save(visit);
+
+    if (visit.checkInAt && (categoriesChanged || appointmentChanged)) {
+      const categories = await this.categoryRepo.findBy({ id: In(dto.categoryIds) });
+      const newScoreP = categories.reduce((sum, c) => sum + c.scoreP, 0);
+
+      // Lấy roomIds trước để emit socket sau khi tính xong
+      const waitingEntries = await this.queueService.getWaitingEntries(id);
+      const roomIds = [...new Set(waitingEntries.map((e) => e.roomId))];
+
+      await this.queueService.updatePScore(id, newScoreP, visit.visitDate);
+
+      // Push realtime update tới tất cả phòng liên quan
+      for (const roomId of roomIds) {
+        await this.queueGateway.emitQueueUpdate(roomId, visit.visitDate);
+      }
+    }
+
+    return this.findOne(id);
   }
 
   async updateCategories(id: string, dto: UpdateVisitCategoriesDto) {

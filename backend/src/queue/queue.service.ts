@@ -225,6 +225,13 @@ export class QueueService {
     return saved;
   }
 
+  // ===== Lấy các entries WAITING của 1 visit (để biết đang chờ phòng nào) =====
+  async getWaitingEntries(visitId: string): Promise<QueueEntry[]> {
+    return this.entryRepo.find({
+      where: { visitId, status: QueueStatus.WAITING },
+    });
+  }
+
   // ===== Cập nhật P score khi thay đổi đối tượng trên lượt khám =====
   // Cập nhật tất cả entries WAITING của visit này (có thể nhiều phòng)
   async updatePScore(
@@ -232,12 +239,15 @@ export class QueueService {
     newScoreP: number,
     visitDate: string,
   ): Promise<void> {
+    // Load relations để scoreC tính đúng appointmentTime
     const entries = await this.entryRepo.find({
       where: { visitId, status: QueueStatus.WAITING },
+      relations: ['visit'],
     });
     if (!entries.length) return;
 
     const config = await this.configService.getScoreConfig();
+    const roomIds = new Set<string>();
     for (const entry of entries) {
       const breakdown = this.scoreService.calculate(entry, config);
       entry.scoreP = newScoreP;
@@ -248,7 +258,11 @@ export class QueueService {
         breakdown.scoreC +
         entry.scoreF;
       await this.entryRepo.save(entry);
-      await this.recalculateQueue(entry.roomId, visitDate);
+      roomIds.add(entry.roomId);
+    }
+    // Tính lại toàn bộ queue từng phòng 1 lần (tránh gọi nhiều lần cùng phòng)
+    for (const roomId of roomIds) {
+      await this.recalculateQueue(roomId, visitDate);
     }
   }
 

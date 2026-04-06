@@ -6,17 +6,20 @@ import type { Visit, Patient, PriorityCategory } from '../../types';
 import { CopyButton } from '../../components/CopyButton';
 import { toast, extractErrorMessage } from '../../components/Toast';
 
+const emptyForm = {
+  patientId: '',
+  categoryIds: [] as string[],
+  appointmentTime: '',
+  visitDate: format(new Date(), 'yyyy-MM-dd'),
+};
+
 export default function VisitsPage() {
   const qc = useQueryClient();
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [showForm, setShowForm] = useState(false);
+  const [editVisit, setEditVisit] = useState<Visit | null>(null);
   const [createdVisit, setCreatedVisit] = useState<Visit | null>(null);
-  const [form, setForm] = useState({
-    patientId: '',
-    categoryIds: [] as string[],
-    appointmentTime: '',
-    visitDate: format(new Date(), 'yyyy-MM-dd'),
-  });
+  const [form, setForm] = useState({ ...emptyForm });
 
   const { data: visits = [] } = useQuery<Visit[]>({
     queryKey: ['visits', date],
@@ -37,9 +40,19 @@ export default function VisitsPage() {
       qc.invalidateQueries({ queryKey: ['visits'] });
       setCreatedVisit(visit);
       setShowForm(false);
-      setForm({ patientId: '', categoryIds: [], appointmentTime: '', visitDate: format(new Date(), 'yyyy-MM-dd') });
+      setForm({ ...emptyForm });
     },
     onError: (e: unknown) => toast.error(extractErrorMessage(e, 'Tạo lượt khám thất bại')),
+  });
+
+  const updateMut = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => visitsApi.update(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['visits'] });
+      setEditVisit(null);
+      toast.success('Đã cập nhật lượt khám');
+    },
+    onError: (e: unknown) => toast.error(extractErrorMessage(e, 'Cập nhật lượt khám thất bại')),
   });
 
   const toggleCategory = (id: string) => {
@@ -51,6 +64,38 @@ export default function VisitsPage() {
     }));
   };
 
+  const openCreate = () => {
+    setEditVisit(null);
+    setForm({ ...emptyForm });
+    setShowForm(true);
+  };
+
+  const openEdit = (v: Visit) => {
+    setEditVisit(v);
+    setForm({
+      patientId: v.patient?.id ?? '',
+      categoryIds: (v.categories ?? []).map((c: any) => c.id),
+      appointmentTime: v.appointmentTime
+        ? format(new Date(v.appointmentTime), "yyyy-MM-dd'T'HH:mm")
+        : '',
+      visitDate: v.visitDate,
+    });
+    setShowForm(true);
+  };
+
+  const handleSubmit = () => {
+    const payload: any = { ...form };
+    if (!payload.appointmentTime) delete payload.appointmentTime;
+
+    if (editVisit) {
+      updateMut.mutate({ id: editVisit.id, data: payload });
+    } else {
+      createMut.mutate(payload);
+    }
+  };
+
+  const isPending = createMut.isPending || updateMut.isPending;
+
   return (
     <div className="p-4 md:p-6">
       <div className="flex items-center justify-between mb-4 gap-2">
@@ -58,7 +103,7 @@ export default function VisitsPage() {
         <div className="flex gap-2 items-center">
           <input type="date" className="px-2 py-2 border border-gray-300 rounded-lg text-sm"
             value={date} onChange={e => setDate(e.target.value)} />
-          <button onClick={() => setShowForm(true)}
+          <button onClick={openCreate}
             className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 whitespace-nowrap">
             + Tạo
           </button>
@@ -90,24 +135,33 @@ export default function VisitsPage() {
         </div>
       )}
 
-      {/* Create form modal */}
+      {/* Create/Edit form modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50">
           <div className="bg-white w-full md:max-w-md md:rounded-xl rounded-t-2xl p-5 shadow-xl max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-800">Tạo lượt khám mới</h3>
+              <h3 className="font-semibold text-gray-800">
+                {editVisit ? `Sửa lượt khám ${editVisit.visitCode}` : 'Tạo lượt khám mới'}
+              </h3>
               <button onClick={() => setShowForm(false)} className="text-gray-400 text-xl px-1">✕</button>
             </div>
             <div className="space-y-4">
+              {/* Bệnh nhân — chỉ cho chọn khi tạo mới */}
               <div>
                 <label className="text-xs text-gray-500 font-medium">Bệnh nhân *</label>
-                <select className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-                  value={form.patientId} onChange={e => setForm(f => ({ ...f, patientId: e.target.value }))}>
-                  <option value="">-- Chọn bệnh nhân --</option>
-                  {patients.map(p => (
-                    <option key={p.id} value={p.id}>{p.fullName}{p.phone ? ` (${p.phone})` : ''}</option>
-                  ))}
-                </select>
+                {editVisit ? (
+                  <div className="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-700">
+                    {editVisit.patient?.fullName}
+                  </div>
+                ) : (
+                  <select className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    value={form.patientId} onChange={e => setForm(f => ({ ...f, patientId: e.target.value }))}>
+                    <option value="">-- Chọn bệnh nhân --</option>
+                    {patients.map(p => (
+                      <option key={p.id} value={p.id}>{p.fullName}{p.phone ? ` (${p.phone})` : ''}</option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div>
@@ -143,24 +197,22 @@ export default function VisitsPage() {
                   value={form.appointmentTime} onChange={e => setForm(f => ({ ...f, appointmentTime: e.target.value }))} />
               </div>
 
-              <div>
-                <label className="text-xs text-gray-500 font-medium">Ngày khám</label>
-                <input type="date" className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-                  value={form.visitDate} onChange={e => setForm(f => ({ ...f, visitDate: e.target.value }))} />
-              </div>
+              {!editVisit && (
+                <div>
+                  <label className="text-xs text-gray-500 font-medium">Ngày khám</label>
+                  <input type="date" className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    value={form.visitDate} onChange={e => setForm(f => ({ ...f, visitDate: e.target.value }))} />
+                </div>
+              )}
             </div>
 
             <div className="flex gap-2 mt-5">
               <button
-                onClick={() => {
-                const payload: any = { ...form };
-                if (!payload.appointmentTime) delete payload.appointmentTime;
-                createMut.mutate(payload);
-              }}
-                disabled={!form.patientId || form.categoryIds.length === 0 || createMut.isPending}
+                onClick={handleSubmit}
+                disabled={!form.patientId && !editVisit || form.categoryIds.length === 0 || isPending}
                 className="flex-1 bg-blue-600 text-white py-2 rounded-md text-sm hover:bg-blue-700 disabled:opacity-40"
               >
-                {createMut.isPending ? 'Đang tạo...' : 'Tạo lượt khám'}
+                {isPending ? 'Đang lưu...' : (editVisit ? 'Cập nhật' : 'Tạo lượt khám')}
               </button>
               <button onClick={() => setShowForm(false)}
                 className="px-4 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50">
@@ -180,6 +232,7 @@ export default function VisitsPage() {
               <th className="text-left px-4 py-3 font-medium text-gray-600">Bệnh nhân</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Đối tượng</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Check-in</th>
+              <th className="text-center px-4 py-3 font-medium text-gray-600">Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -192,7 +245,7 @@ export default function VisitsPage() {
                 <td className="px-4 py-3 font-medium text-gray-800">{v.patient?.fullName}</td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-1">
-                    {(v.categories ?? []).map(cat => (
+                    {(v.categories ?? []).map((cat: any) => (
                       <span key={cat.id} className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{cat.name}</span>
                     ))}
                   </div>
@@ -203,10 +256,13 @@ export default function VisitsPage() {
                     : <span className="text-gray-400 text-xs">Chưa check-in</span>
                   }
                 </td>
+                <td className="px-4 py-3 text-center">
+                  <button onClick={() => openEdit(v)} className="text-blue-600 hover:underline text-xs">Sửa</button>
+                </td>
               </tr>
             ))}
             {visits.length === 0 && (
-              <tr><td colSpan={4} className="text-center py-8 text-gray-400">Không có lượt khám nào</td></tr>
+              <tr><td colSpan={5} className="text-center py-8 text-gray-400">Không có lượt khám nào</td></tr>
             )}
           </tbody>
         </table>
@@ -221,20 +277,20 @@ export default function VisitsPage() {
                 <div className="font-medium text-gray-800 truncate">{v.patient?.fullName}</div>
                 <div className="flex items-center gap-2 mt-0.5">
                   <span className="font-mono text-xs text-blue-700 font-bold">{v.visitCode}</span>
-                  <button onClick={() => navigator.clipboard.writeText(v.visitCode)}
-                    className="text-xs text-gray-400">copy</button>
+                  <CopyButton text={v.visitCode} className="text-xs" />
                 </div>
               </div>
-              <div className="shrink-0 text-right">
+              <div className="shrink-0 flex flex-col items-end gap-1">
                 {v.checkInAt
                   ? <span className="text-green-600 text-xs">✓ {new Date(v.checkInAt).toLocaleTimeString('vi-VN')}</span>
                   : <span className="text-gray-400 text-xs">Chưa check-in</span>
                 }
+                <button onClick={() => openEdit(v)} className="text-blue-600 text-xs font-medium">Sửa</button>
               </div>
             </div>
             {(v.categories ?? []).length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
-                {(v.categories ?? []).map(cat => (
+                {(v.categories ?? []).map((cat: any) => (
                   <span key={cat.id} className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{cat.name}</span>
                 ))}
               </div>

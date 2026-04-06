@@ -117,6 +117,17 @@ BƯỚC 3 — Bác sĩ điều phối
 7. Hệ thống sinh ra **mã lượt khám** (ví dụ: `VK-20260406-003`)
 8. **Bấm "Copy mã"** → đưa cho bệnh nhân (in hoặc ghi tay)
 
+#### Sửa lượt khám
+
+Khi cần điều chỉnh thông tin sau khi đã tạo (ví dụ: bệnh nhân có thêm đối tượng ưu tiên, hoặc đổi giờ hẹn):
+
+1. Vào menu **📋 Lượt khám** → chọn đúng ngày
+2. Bấm **Sửa** trên dòng/thẻ lượt khám cần chỉnh
+3. Điều chỉnh **đối tượng ưu tiên** và/hoặc **giờ hẹn**
+4. Bấm **Cập nhật**
+
+> **Quan trọng:** Nếu bệnh nhân đã check-in và đang trong hàng đợi, thay đổi đối tượng ưu tiên sẽ **tính lại điểm và cập nhật thứ tự hàng đợi ngay lập tức** ở tất cả phòng bệnh nhân đang chờ — không cần đợi.
+
 ---
 
 ### 4.3 Check-in bệnh nhân
@@ -225,15 +236,19 @@ Khi hover vào điểm số của bệnh nhân, sẽ thấy bảng chi tiết:
 
 ```
 Nguyễn Văn A
-─────────────────────────
-P (ưu tiên nền):   +120.0    ← Điểm cố định từ đối tượng được chọn
-T (15ph):           +23.4    ← Điểm thời gian chờ, tăng mỗi phút
-S (skip/đẩy lùi):  +20.0    ← Điểm bù vì đã bị bỏ qua 1 lần
-C (check-in):       +15.0    ← Đã chờ 15 phút kể từ check-in
-F (thủ công):        +0.0    ← Chưa điều chỉnh
-─────────────────────────
-TỔNG:              178.4
+─────────────────────────────
+P (Điểm theo đối tượng):  +130.0
+   VIP                     +120
+   Cao tuổi 60–69           +10
+T (15ph):                  +23.4    ← Điểm thời gian chờ, tăng mỗi phút
+S (skip/đẩy lùi):          +20.0    ← Điểm bù vì đã bị bỏ qua 1 lần
+C (check-in):               +15.0    ← Đã chờ 15 phút kể từ check-in
+F (thủ công):                +0.0    ← Chưa điều chỉnh
+─────────────────────────────
+TỔNG:                       188.4
 ```
+
+> Điểm **P** được liệt kê chi tiết từng danh mục ưu tiên kèm điểm riêng, giúp kiểm tra nhanh bệnh nhân đã được chọn đúng đối tượng chưa.
 
 **Điểm càng cao → đứng càng trên trong hàng đợi.**
 
@@ -257,6 +272,12 @@ Hệ thống tự tính lại **mỗi phút** và cập nhật thứ tự tức 
 
 **Q: Lỡ check-in nhầm phòng thì sao?**
 > Hiện tại cần liên hệ quản lý để can thiệp. Tính năng huỷ check-in đang được phát triển.
+
+**Q: Bệnh nhân được phát hiện thêm đối tượng ưu tiên sau khi đã vào hàng đợi thì làm gì?**
+> Vào **📋 Lượt khám** → bấm **Sửa** → tick thêm đối tượng → bấm **Cập nhật**. Hệ thống sẽ tính lại điểm và cập nhật thứ tự hàng đợi ở tất cả phòng ngay lập tức.
+
+**Q: Thông báo thành công/thất bại hiện ở đâu?**
+> Hiện ở góc dưới bên phải màn hình — màu xanh lá là thành công, màu đỏ là lỗi kèm lý do cụ thể. Thông báo tự tắt sau vài giây.
 
 **Q: Màn hình xếp hàng có cần refresh không?**
 > Không cần. Màn hình tự cập nhật realtime khi có thay đổi (● Realtime — chấm xanh góc phải).
