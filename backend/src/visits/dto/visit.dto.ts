@@ -11,41 +11,38 @@ import { Transform } from 'class-transformer';
 import { CheckInType } from '../entities/visit.entity';
 
 export class CreateVisitDto {
-  @IsUUID()
+  @IsUUID('all', { message: 'ID bệnh nhân không hợp lệ' })
   patientId: string;
 
-  // Nhiều đối tượng ưu tiên
-  @IsArray()
-  @IsUUID('all', { each: true })
-  @ArrayMinSize(1)
+  @IsArray({ message: 'Danh sách đối tượng ưu tiên phải là mảng' })
+  @IsUUID('all', { each: true, message: 'ID đối tượng ưu tiên không hợp lệ' })
+  @ArrayMinSize(1, { message: 'Phải chọn ít nhất 1 đối tượng ưu tiên' })
   categoryIds: string[];
 
-  // Không cần roomId khi tạo lượt khám
   @Transform(({ value }) => value || undefined)
-  @IsDateString()
+  @IsDateString({}, { message: 'Giờ hẹn không đúng định dạng ISO 8601' })
   @IsOptional()
   appointmentTime?: string;
 
-  @IsDateString()
+  @IsDateString({}, { message: 'Ngày khám không đúng định dạng (YYYY-MM-DD)' })
   @IsOptional()
   visitDate?: string;
 }
 
 export class UpdateVisitCategoriesDto {
-  @IsArray()
-  @IsUUID('all', { each: true })
-  @ArrayMinSize(1)
+  @IsArray({ message: 'Danh sách đối tượng ưu tiên phải là mảng' })
+  @IsUUID('all', { each: true, message: 'ID đối tượng ưu tiên không hợp lệ' })
+  @ArrayMinSize(1, { message: 'Phải chọn ít nhất 1 đối tượng ưu tiên' })
   categoryIds: string[];
 }
 
 export class CheckInDto {
-  @IsString()
+  @IsString({ message: 'Mã lượt khám không được để trống' })
   visitCode: string;
 
-  @IsEnum(CheckInType)
+  @IsEnum(CheckInType, { message: 'Loại check-in không hợp lệ (new hoặc result)' })
   type: CheckInType;
 
-  // Room được chọn tại màn hình xếp hàng
-  @IsUUID()
+  @IsUUID('all', { message: 'ID phòng khám không hợp lệ' })
   roomId: string;
 }

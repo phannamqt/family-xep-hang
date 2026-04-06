@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { visitsApi, roomsApi } from '../../api';
 import type { Visit, ClinicRoom } from '../../types';
+import { extractErrorMessage } from '../../components/Toast';
 
 export default function CheckInPage() {
   const [code, setCode] = useState('');
@@ -24,11 +25,11 @@ export default function CheckInPage() {
       });
       setCode('');
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       setResult({
         visit: null as any,
         success: false,
-        message: err?.response?.data?.message ?? 'Check-in thất bại',
+        message: extractErrorMessage(err, 'Check-in thất bại'),
       });
     },
   });

@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { roomsApi, queueApi, visitsApi } from '../../api';
 import type { ClinicRoom, QueueEntry, DoctorSlot } from '../../types';
 import { useQueueSocket } from '../../hooks/useSocket';
-import { toast } from '../../components/Toast';
+import { toast, extractErrorMessage } from '../../components/Toast';
 
 export default function QueuePage() {
   const [selectedRoomId, setSelectedRoomId] = useState<string>('');
@@ -108,7 +108,7 @@ function WaitingColumn({ entries, room }: {
   const skipMut = useMutation({
     mutationFn: (id: string) => queueApi.skip(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['queue'] }),
-    onError: () => toast.error('Bỏ qua thất bại'),
+    onError: (e: unknown) => toast.error(extractErrorMessage(e, 'Bỏ qua thất bại')),
   });
 
   const fairnessMut = useMutation({
@@ -118,7 +118,7 @@ function WaitingColumn({ entries, room }: {
       qc.invalidateQueries({ queryKey: ['queue'] });
       toast.success('Đã cập nhật điểm F');
     },
-    onError: () => toast.error('Cập nhật điểm F thất bại'),
+    onError: (e: unknown) => toast.error(extractErrorMessage(e, 'Cập nhật điểm F thất bại')),
   });
 
   const checkInMut = useMutation({
@@ -128,8 +128,8 @@ function WaitingColumn({ entries, room }: {
       setCheckInCode('');
       setTimeout(() => setCheckInMsg(null), 3000);
     },
-    onError: (e: any) => {
-      setCheckInMsg({ ok: false, text: e?.response?.data?.message ?? 'Check-in thất bại' });
+    onError: (e: unknown) => {
+      setCheckInMsg({ ok: false, text: extractErrorMessage(e, 'Check-in thất bại') });
     },
   });
 
@@ -305,7 +305,7 @@ function InviteModal({ entry, room, onClose }: {
   const inviteMut = useMutation({
     mutationFn: (slotId: string) => queueApi.invite(entry.id, slotId),
     onSuccess: () => onClose(),
-    onError: (e: any) => setError(e?.response?.data?.message ?? 'Lỗi mời vào phòng'),
+    onError: (e: unknown) => setError(extractErrorMessage(e, 'Lỗi mời vào phòng')),
   });
 
   return (
@@ -355,7 +355,7 @@ function InRoomColumn({ entries, room }: {
       qc.invalidateQueries({ queryKey: ['queue'] });
       toast.success('Đã hoàn tất khám');
     },
-    onError: () => toast.error('Cập nhật trạng thái thất bại'),
+    onError: (e: unknown) => toast.error(extractErrorMessage(e, 'Cập nhật trạng thái thất bại')),
   });
 
   const slots = [...(room?.slots ?? [])].sort((a, b) => a.slotNumber - b.slotNumber);

@@ -8,36 +8,36 @@ import {
 import { RoomType } from '../entities/clinic-room.entity';
 
 export class CreateClinicRoomDto {
-  @IsString()
-  @MaxLength(100)
+  @IsString({ message: 'Tên phòng phải là chuỗi ký tự' })
+  @MaxLength(100, { message: 'Tên phòng tối đa 100 ký tự' })
   name: string;
 
-  @IsString()
+  @IsString({ message: 'Mô tả phải là chuỗi ký tự' })
   @IsOptional()
-  @MaxLength(200)
+  @MaxLength(200, { message: 'Mô tả tối đa 200 ký tự' })
   description?: string;
 
-  @IsEnum(RoomType)
+  @IsEnum(RoomType, { message: 'Loại phòng không hợp lệ (examination hoặc result)' })
   @IsOptional()
   type?: RoomType;
 }
 
 export class UpdateClinicRoomDto {
-  @IsString()
+  @IsString({ message: 'Tên phòng phải là chuỗi ký tự' })
   @IsOptional()
-  @MaxLength(100)
+  @MaxLength(100, { message: 'Tên phòng tối đa 100 ký tự' })
   name?: string;
 
-  @IsString()
+  @IsString({ message: 'Mô tả phải là chuỗi ký tự' })
   @IsOptional()
-  @MaxLength(200)
+  @MaxLength(200, { message: 'Mô tả tối đa 200 ký tự' })
   description?: string;
 
-  @IsEnum(RoomType)
+  @IsEnum(RoomType, { message: 'Loại phòng không hợp lệ (examination hoặc result)' })
   @IsOptional()
   type?: RoomType;
 
-  @IsBoolean()
+  @IsBoolean({ message: 'Trạng thái phải là true/false' })
   @IsOptional()
   isActive?: boolean;
 }

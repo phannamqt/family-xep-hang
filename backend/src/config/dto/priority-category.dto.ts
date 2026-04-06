@@ -8,47 +8,47 @@ import {
 } from 'class-validator';
 
 export class CreatePriorityCategoryDto {
-  @IsString()
-  @MaxLength(100)
+  @IsString({ message: 'Tên đối tượng phải là chuỗi ký tự' })
+  @MaxLength(100, { message: 'Tên đối tượng tối đa 100 ký tự' })
   name: string;
 
-  @IsString()
+  @IsString({ message: 'Mô tả phải là chuỗi ký tự' })
   @IsOptional()
-  @MaxLength(200)
+  @MaxLength(200, { message: 'Mô tả tối đa 200 ký tự' })
   description?: string;
 
-  @IsInt()
-  @Min(0)
+  @IsInt({ message: 'Điểm P phải là số nguyên' })
+  @Min(0, { message: 'Điểm P không được âm' })
   scoreP: number;
 
-  @IsInt()
+  @IsInt({ message: 'Thứ tự phải là số nguyên' })
   @IsOptional()
-  @Min(0)
+  @Min(0, { message: 'Thứ tự không được âm' })
   sortOrder?: number;
 }
 
 export class UpdatePriorityCategoryDto {
-  @IsString()
+  @IsString({ message: 'Tên đối tượng phải là chuỗi ký tự' })
   @IsOptional()
-  @MaxLength(100)
+  @MaxLength(100, { message: 'Tên đối tượng tối đa 100 ký tự' })
   name?: string;
 
-  @IsString()
+  @IsString({ message: 'Mô tả phải là chuỗi ký tự' })
   @IsOptional()
-  @MaxLength(200)
+  @MaxLength(200, { message: 'Mô tả tối đa 200 ký tự' })
   description?: string;
 
-  @IsInt()
+  @IsInt({ message: 'Điểm P phải là số nguyên' })
   @IsOptional()
-  @Min(0)
+  @Min(0, { message: 'Điểm P không được âm' })
   scoreP?: number;
 
-  @IsInt()
+  @IsInt({ message: 'Thứ tự phải là số nguyên' })
   @IsOptional()
-  @Min(0)
+  @Min(0, { message: 'Thứ tự không được âm' })
   sortOrder?: number;
 
-  @IsBoolean()
+  @IsBoolean({ message: 'Trạng thái phải là true/false' })
   @IsOptional()
   isActive?: boolean;
 }

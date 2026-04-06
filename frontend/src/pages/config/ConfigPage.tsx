@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { configApi, roomsApi } from '../../api';
 import type { PriorityCategory, ScoreConfig, ClinicRoom, DoctorSlot } from '../../types';
-import { toast } from '../../components/Toast';
+import { toast, extractErrorMessage } from '../../components/Toast';
 
 export default function ConfigPage() {
   const [tab, setTab] = useState<'categories' | 'score' | 'rooms'>('categories');
@@ -57,7 +57,7 @@ function CategoriesTab() {
       toast.success(editId ? 'Đã cập nhật đối tượng' : 'Đã thêm đối tượng mới');
       setEditId(null);
     },
-    onError: () => toast.error('Lưu đối tượng thất bại'),
+    onError: (e: unknown) => toast.error(extractErrorMessage(e, 'Lưu đối tượng thất bại')),
   });
 
   const deleteMut = useMutation({
@@ -66,7 +66,7 @@ function CategoriesTab() {
       qc.invalidateQueries({ queryKey: ['categories'] });
       toast.success('Đã xoá đối tượng');
     },
-    onError: () => toast.error('Xoá đối tượng thất bại'),
+    onError: (e: unknown) => toast.error(extractErrorMessage(e, 'Xoá đối tượng thất bại')),
   });
 
   const startEdit = (cat: PriorityCategory) => {
@@ -185,7 +185,7 @@ function ScoreConfigTab() {
       qc.invalidateQueries({ queryKey: ['score-config'] });
       toast.success('Đã lưu cấu hình điểm');
     },
-    onError: () => toast.error('Lưu cấu hình thất bại'),
+    onError: (e: unknown) => toast.error(extractErrorMessage(e, 'Lưu cấu hình thất bại')),
   });
 
   const val = { ...config, ...form };
@@ -262,7 +262,7 @@ function RoomsTab() {
       setForm({ name: '', description: '', type: 'examination' });
       toast.success('Đã thêm phòng khám');
     },
-    onError: () => toast.error('Thêm phòng khám thất bại'),
+    onError: (e: unknown) => toast.error(extractErrorMessage(e, 'Thêm phòng khám thất bại')),
   });
 
   const upsertSlotsMut = useMutation({
@@ -272,7 +272,7 @@ function RoomsTab() {
       qc.invalidateQueries({ queryKey: ['rooms'] });
       toast.success('Đã cập nhật số slot');
     },
-    onError: () => toast.error('Cập nhật slot thất bại'),
+    onError: (e: unknown) => toast.error(extractErrorMessage(e, 'Cập nhật slot thất bại')),
   });
 
   const updateSlotMut = useMutation({
@@ -282,7 +282,7 @@ function RoomsTab() {
       qc.invalidateQueries({ queryKey: ['rooms'] });
       toast.success('Đã lưu thông tin bác sĩ');
     },
-    onError: () => toast.error('Lưu thông tin bác sĩ thất bại'),
+    onError: (e: unknown) => toast.error(extractErrorMessage(e, 'Lưu thông tin bác sĩ thất bại')),
   });
 
   const room = selectedRoom
