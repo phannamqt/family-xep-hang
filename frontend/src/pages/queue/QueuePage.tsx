@@ -243,22 +243,32 @@ function WaitingCard({ entry, rank, fairnessValue, onFairnessChange, onFairnessS
           </div>
 
           {showTooltip && bd && (
-            <div className="absolute right-0 top-8 z-20 bg-gray-900 text-white text-xs rounded-lg p-3 w-52 shadow-xl">
+            <div className="absolute right-0 top-8 z-20 bg-gray-900 text-white text-xs rounded-lg p-3 w-60 shadow-xl">
               <div className="font-semibold mb-2 border-b border-gray-600 pb-1">
                 {entry.visit?.patient?.fullName}
               </div>
               <div className="space-y-1">
-                <div className="flex justify-between"><span>P (ưu tiên nền):</span><span className="font-mono">+{bd.scoreP.toFixed(1)}</span></div>
-                <div className="flex justify-between"><span>T ({waitMin}ph):</span><span className="font-mono">+{bd.scoreT.toFixed(1)}</span></div>
-                <div className="flex justify-between"><span>S (skip/đẩy lùi):</span><span className="font-mono">+{bd.scoreS.toFixed(1)}</span></div>
-                <div className="flex justify-between"><span>C (check-in):</span><span className="font-mono">{bd.scoreC >= 0 ? '+' : ''}{bd.scoreC.toFixed(1)}</span></div>
-                <div className="flex justify-between"><span>F (thủ công):</span><span className="font-mono">{entry.scoreF >= 0 ? '+' : ''}{entry.scoreF.toFixed(1)}</span></div>
+                {/* P — liệt kê từng danh mục */}
+                <div className="flex justify-between font-medium">
+                  <span>P (Điểm theo đối tượng):</span>
+                  <span className="font-mono">+{bd.scoreP.toFixed(1)}</span>
+                </div>
+                {(entry.visit?.categories ?? []).map(cat => (
+                  <div key={cat.id} className="flex justify-between pl-3 text-gray-400">
+                    <span className="truncate mr-2">{cat.name}</span>
+                    <span className="font-mono shrink-0">+{cat.scoreP}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between pt-0.5"><span>T ({waitMin}ph):</span><span className="font-mono">+{bd.scoreT.toFixed(1)}</span></div>
+                <div className="flex justify-between"><span>S (Skip/đẩy lùi):</span><span className="font-mono">+{bd.scoreS.toFixed(1)}</span></div>
+                <div className="flex justify-between"><span>C (Check-in):</span><span className="font-mono">{bd.scoreC >= 0 ? '+' : ''}{bd.scoreC.toFixed(1)}</span></div>
+                <div className="flex justify-between"><span>F (Thủ công):</span><span className="font-mono">{entry.scoreF >= 0 ? '+' : ''}{entry.scoreF.toFixed(1)}</span></div>
                 <div className="flex justify-between border-t border-gray-600 pt-1 font-bold">
                   <span>TỔNG:</span><span className="font-mono">{bd.total.toFixed(1)}</span>
                 </div>
               </div>
-              {entry.skipCount > 0 && <div className="mt-1 text-yellow-300 text-xs">Bỏ qua {entry.skipCount} lần</div>}
-              {entry.autoSkipCount > 0 && <div className="text-orange-300 text-xs">Bị đẩy lùi {entry.autoSkipCount} lần</div>}
+              {entry.skipCount > 0 && <div className="mt-1 text-yellow-300">Bỏ qua {entry.skipCount} lần</div>}
+              {entry.autoSkipCount > 0 && <div className="text-orange-300">Bị đẩy lùi {entry.autoSkipCount} lần</div>}
             </div>
           )}
         </div>

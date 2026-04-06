@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { QueueEntry } from './entities/queue-entry.entity';
 import { Visit } from '../visits/entities/visit.entity';
+import { PriorityCategory } from '../config/entities/priority-category.entity';
 import { QueueController } from './queue.controller';
 import { QueueService } from './queue.service';
 import { QueueGateway } from './queue.gateway';
@@ -11,7 +12,7 @@ import { AppConfigModule } from '../config/config.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([QueueEntry, Visit]),
+    TypeOrmModule.forFeature([QueueEntry, Visit, PriorityCategory]),
     AppConfigModule,
   ],
   controllers: [QueueController],

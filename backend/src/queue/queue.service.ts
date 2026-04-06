@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { format } from 'date-fns';
 import { QueueEntry, QueueStatus } from './entities/queue-entry.entity';
 import { Visit } from '../visits/entities/visit.entity';
@@ -8,6 +8,7 @@ import { CheckInType } from '../visits/entities/visit.entity';
 import { ConfigService } from '../config/config.service';
 import { ScoreService, ScoreBreakdown } from './score.service';
 import { InviteToRoomDto, UpdateFairnessDto } from './dto/queue.dto';
+import { PriorityCategory } from '../config/entities/priority-category.entity';
 
 export interface QueueEntryWithScore extends QueueEntry {
   scoreBreakdown: ScoreBreakdown;
@@ -18,8 +19,8 @@ export class QueueService {
   constructor(
     @InjectRepository(QueueEntry)
     private readonly entryRepo: Repository<QueueEntry>,
-    @InjectRepository(Visit)
-    private readonly visitRepo: Repository<Visit>,
+    @InjectRepository(PriorityCategory)
+    private readonly categoryRepo: Repository<PriorityCategory>,
     private readonly configService: ConfigService,
     private readonly scoreService: ScoreService,
   ) {}
@@ -75,6 +76,8 @@ export class QueueService {
         statuses: [QueueStatus.WAITING, QueueStatus.IN_ROOM, QueueStatus.DONE],
       })
       .getMany();
+
+    await this.attachCategories(entries);
 
     // Tính score realtime cho từng entry
     return entries.map((entry) => ({
@@ -242,6 +245,23 @@ export class QueueService {
 
     for (const { roomId } of activeRooms) {
       await this.recalculateQueue(roomId, today);
+    }
+  }
+
+  // ===== Populate categories vào visit (Visit chỉ lưu categoryIds) =====
+  private async attachCategories(entries: QueueEntry[]): Promise<void> {
+    const allIds = [
+      ...new Set(entries.flatMap((e) => e.visit?.categoryIds ?? [])),
+    ];
+    if (!allIds.length) return;
+    const categories = await this.categoryRepo.findBy({ id: In(allIds) });
+    const catMap = new Map(categories.map((c) => [c.id, c]));
+    for (const entry of entries) {
+      if (entry.visit) {
+        (entry.visit as any).categories = (entry.visit.categoryIds ?? [])
+          .map((id) => catMap.get(id))
+          .filter(Boolean);
+      }
     }
   }
 }
