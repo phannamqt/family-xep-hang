@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { visitsApi, patientsApi, configApi } from '../../api';
 import type { Visit, Patient, PriorityCategory } from '../../types';
+import { CopyButton } from '../../components/CopyButton';
 
 export default function VisitsPage() {
   const qc = useQueryClient();
@@ -73,12 +74,12 @@ export default function VisitsPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            <button
-              onClick={() => { navigator.clipboard.writeText(createdVisit.visitCode); }}
+            <CopyButton
+              text={createdVisit.visitCode}
+              label="Copy mã"
+              variant="button"
               className="px-3 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700"
-            >
-              Copy mã
-            </button>
+            />
             <button onClick={() => setCreatedVisit(null)}
               className="px-3 py-2 border border-green-300 text-green-700 rounded-md text-sm">
               Đóng
@@ -184,8 +185,7 @@ export default function VisitsPage() {
               <tr key={v.id} className="border-b border-gray-100 hover:bg-gray-50">
                 <td className="px-4 py-3">
                   <div className="font-mono font-bold text-blue-700 text-xs">{v.visitCode}</div>
-                  <button onClick={() => navigator.clipboard.writeText(v.visitCode)}
-                    className="text-xs text-gray-400 hover:text-blue-600">copy</button>
+                  <CopyButton text={v.visitCode} className="text-xs" />
                 </td>
                 <td className="px-4 py-3 font-medium text-gray-800">{v.patient?.fullName}</td>
                 <td className="px-4 py-3">
