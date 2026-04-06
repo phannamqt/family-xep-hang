@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { configApi, roomsApi } from '../../api';
 import type { PriorityCategory, ScoreConfig, ClinicRoom, DoctorSlot } from '../../types';
+import { toast } from '../../components/Toast';
 
 export default function ConfigPage() {
   const [tab, setTab] = useState<'categories' | 'score' | 'rooms'>('categories');
@@ -53,13 +54,19 @@ function CategoriesTab() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['categories'] });
       setForm({ name: '', description: '', scoreP: 0, sortOrder: 0 });
+      toast.success(editId ? 'Đã cập nhật đối tượng' : 'Đã thêm đối tượng mới');
       setEditId(null);
     },
+    onError: () => toast.error('Lưu đối tượng thất bại'),
   });
 
   const deleteMut = useMutation({
     mutationFn: configApi.deleteCategory,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['categories'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['categories'] });
+      toast.success('Đã xoá đối tượng');
+    },
+    onError: () => toast.error('Xoá đối tượng thất bại'),
   });
 
   const startEdit = (cat: PriorityCategory) => {
@@ -174,7 +181,11 @@ function ScoreConfigTab() {
 
   const updateMut = useMutation({
     mutationFn: configApi.updateScoreConfig,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['score-config'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['score-config'] });
+      toast.success('Đã lưu cấu hình điểm');
+    },
+    onError: () => toast.error('Lưu cấu hình thất bại'),
   });
 
   const val = { ...config, ...form };
@@ -249,19 +260,29 @@ function RoomsTab() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['rooms'] });
       setForm({ name: '', description: '', type: 'examination' });
+      toast.success('Đã thêm phòng khám');
     },
+    onError: () => toast.error('Thêm phòng khám thất bại'),
   });
 
   const upsertSlotsMut = useMutation({
     mutationFn: ({ id, count }: { id: string; count: number }) =>
       roomsApi.upsertSlots(id, count),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['rooms'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['rooms'] });
+      toast.success('Đã cập nhật số slot');
+    },
+    onError: () => toast.error('Cập nhật slot thất bại'),
   });
 
   const updateSlotMut = useMutation({
     mutationFn: ({ roomId, slotId, data }: any) =>
       roomsApi.updateSlot(roomId, slotId, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['rooms'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['rooms'] });
+      toast.success('Đã lưu thông tin bác sĩ');
+    },
+    onError: () => toast.error('Lưu thông tin bác sĩ thất bại'),
   });
 
   const room = selectedRoom

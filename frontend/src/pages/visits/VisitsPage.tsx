@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { visitsApi, patientsApi, configApi } from '../../api';
 import type { Visit, Patient, PriorityCategory } from '../../types';
 import { CopyButton } from '../../components/CopyButton';
+import { toast } from '../../components/Toast';
 
 export default function VisitsPage() {
   const qc = useQueryClient();
@@ -38,6 +39,7 @@ export default function VisitsPage() {
       setShowForm(false);
       setForm({ patientId: '', categoryIds: [], appointmentTime: '', visitDate: format(new Date(), 'yyyy-MM-dd') });
     },
+    onError: () => toast.error('Tạo lượt khám thất bại'),
   });
 
   const toggleCategory = (id: string) => {

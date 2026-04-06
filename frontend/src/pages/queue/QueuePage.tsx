@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { roomsApi, queueApi, visitsApi } from '../../api';
 import type { ClinicRoom, QueueEntry, DoctorSlot } from '../../types';
 import { useQueueSocket } from '../../hooks/useSocket';
+import { toast } from '../../components/Toast';
 
 export default function QueuePage() {
   const [selectedRoomId, setSelectedRoomId] = useState<string>('');
@@ -107,12 +108,17 @@ function WaitingColumn({ entries, room }: {
   const skipMut = useMutation({
     mutationFn: (id: string) => queueApi.skip(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['queue'] }),
+    onError: () => toast.error('Bỏ qua thất bại'),
   });
 
   const fairnessMut = useMutation({
     mutationFn: ({ id, scoreF }: { id: string; scoreF: number }) =>
       queueApi.updateFairness(id, scoreF),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['queue'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['queue'] });
+      toast.success('Đã cập nhật điểm F');
+    },
+    onError: () => toast.error('Cập nhật điểm F thất bại'),
   });
 
   const checkInMut = useMutation({
@@ -345,7 +351,11 @@ function InRoomColumn({ entries, room }: {
 
   const doneMut = useMutation({
     mutationFn: (id: string) => queueApi.markDone(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['queue'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['queue'] });
+      toast.success('Đã hoàn tất khám');
+    },
+    onError: () => toast.error('Cập nhật trạng thái thất bại'),
   });
 
   const slots = [...(room?.slots ?? [])].sort((a, b) => a.slotNumber - b.slotNumber);

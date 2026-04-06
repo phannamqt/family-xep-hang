@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { patientsApi } from '../../api';
 import type { Patient } from '../../types';
+import { toast } from '../../components/Toast';
 
 function calcAge(dob: string) {
   const diff = Date.now() - new Date(dob).getTime();
@@ -32,12 +33,18 @@ export default function PatientsPage() {
       setForm({ ...emptyForm });
       setEditId(null);
       setShowForm(false);
+      toast.success(editId ? 'Đã cập nhật bệnh nhân' : 'Đã thêm bệnh nhân mới');
     },
+    onError: () => toast.error('Lưu thông tin bệnh nhân thất bại'),
   });
 
   const deleteMut = useMutation({
     mutationFn: patientsApi.delete,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['patients'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['patients'] });
+      toast.success('Đã xoá bệnh nhân');
+    },
+    onError: () => toast.error('Xoá bệnh nhân thất bại'),
   });
 
   const startEdit = (p: Patient) => {

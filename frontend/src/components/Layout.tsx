@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { ToastContainer } from './Toast';
 
 const navItems = [
   { to: '/queue', label: 'Danh sách xếp hàng', icon: '🏥' },
@@ -94,6 +95,7 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+      <ToastContainer />
     </div>
   );
 }
