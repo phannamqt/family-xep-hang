@@ -233,7 +233,7 @@ function WaitingCard({ entry, rank, fairnessValue, onFairnessChange, onFairnessS
         {/* Score badge với tooltip */}
         <div className="relative ml-2" onMouseEnter={() => setShowTooltip(true)} onMouseLeave={() => setShowTooltip(false)}>
           <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded font-bold text-sm cursor-help">
-            {total.toFixed(1)}đ
+            {total.toFixed(1)} điểm
           </div>
 
           {showTooltip && bd && (

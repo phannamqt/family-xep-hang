@@ -1,5 +1,7 @@
 # Xếp Hàng — Hệ Thống Quản Lý Hàng Đợi Thông Minh
 
+> 📖 **[Hướng dẫn sử dụng cho nhân viên → HUONG_DAN_SU_DUNG.md](./HUONG_DAN_SU_DUNG.md)**
+
 Phần mềm quản lý hàng đợi khám bệnh cho phòng khám/bệnh viện. Ưu tiên bệnh nhân dựa trên công thức điểm đa thành phần, cập nhật realtime qua Socket.io.
 
 ---
