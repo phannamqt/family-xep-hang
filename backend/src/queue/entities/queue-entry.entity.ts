@@ -9,6 +9,12 @@ import {
 } from 'typeorm';
 import { Visit } from '../../visits/entities/visit.entity';
 import { DoctorSlot } from '../../rooms/entities/doctor-slot.entity';
+import { ClinicRoom } from '../../rooms/entities/clinic-room.entity';
+
+export enum CheckInType {
+  NEW = 'new',
+  RESULT = 'result',
+}
 
 export enum QueueStatus {
   WAITING = 'waiting',     // Đang chờ khám
@@ -28,6 +34,18 @@ export class QueueEntry {
 
   @Column({ name: 'visit_id' })
   visitId: string;
+
+  // Phòng khám của entry này (mỗi check-in vào 1 phòng tạo 1 entry)
+  @ManyToOne(() => ClinicRoom, { nullable: true })
+  @JoinColumn({ name: 'room_id' })
+  room: ClinicRoom;
+
+  @Column({ name: 'room_id', nullable: true })
+  roomId: string;
+
+  // Loại check-in: khám mới hoặc trả kết quả
+  @Column({ type: 'enum', enum: CheckInType, nullable: true })
+  checkInType: CheckInType;
 
   // Slot bác sĩ đang khám (null nếu đang chờ)
   @ManyToOne(() => DoctorSlot, { nullable: true })

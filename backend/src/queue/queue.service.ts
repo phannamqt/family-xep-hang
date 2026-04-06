@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { format } from 'date-fns';
 import { QueueEntry, QueueStatus } from './entities/queue-entry.entity';
 import { Visit } from '../visits/entities/visit.entity';
+import { CheckInType } from '../visits/entities/visit.entity';
 import { ConfigService } from '../config/config.service';
 import { ScoreService, ScoreBreakdown } from './score.service';
 import { InviteToRoomDto, UpdateFairnessDto } from './dto/queue.dto';
@@ -24,16 +25,24 @@ export class QueueService {
   ) {}
 
   // ===== Thêm bệnh nhân vào queue khi check-in =====
-  // scoreP được tính từ tổng các đối tượng đã chọn (truyền vào từ VisitsService)
-  async addToQueue(visit: Visit, scoreP: number = 0): Promise<QueueEntry> {
+  // 1 visit có thể check-in nhiều phòng khác nhau → mỗi lần tạo 1 QueueEntry
+  // Cùng phòng + cùng loại → không tạo trùng nếu đang WAITING
+  async addToQueue(
+    visit: Visit,
+    scoreP: number = 0,
+    roomId: string,
+    checkInType: CheckInType,
+  ): Promise<QueueEntry> {
     const existing = await this.entryRepo.findOne({
-      where: { visitId: visit.id, status: QueueStatus.WAITING },
+      where: { visitId: visit.id, roomId, checkInType, status: QueueStatus.WAITING },
     });
     if (existing) return existing;
 
     const entry = this.entryRepo.create({
       visitId: visit.id,
       visit,
+      roomId,
+      checkInType,
       status: QueueStatus.WAITING,
       scoreP,
       scoreT: 0,
@@ -44,9 +53,7 @@ export class QueueService {
       queuedAt: new Date(),
     });
 
-    // Tính C initial (nếu có giờ hẹn)
-    const saved = await this.entryRepo.save(entry);
-    return saved;
+    return this.entryRepo.save(entry);
   }
 
   // ===== Lấy danh sách queue theo phòng + ngày =====
@@ -62,7 +69,7 @@ export class QueueService {
       .leftJoinAndSelect('entry.visit', 'visit')
       .leftJoinAndSelect('visit.patient', 'patient')
       .leftJoinAndSelect('entry.slot', 'slot')
-      .where('visit.roomId = :roomId', { roomId })
+      .where('entry.roomId = :roomId', { roomId })
       .andWhere('visit.visitDate = :date', { date: targetDate })
       .andWhere('entry.status IN (:...statuses)', {
         statuses: [QueueStatus.WAITING, QueueStatus.IN_ROOM, QueueStatus.DONE],
@@ -84,7 +91,7 @@ export class QueueService {
     const waitingEntries = await this.entryRepo
       .createQueryBuilder('entry')
       .leftJoinAndSelect('entry.visit', 'visit')
-      .where('visit.roomId = :roomId', { roomId })
+      .where('entry.roomId = :roomId', { roomId })
       .andWhere('visit.visitDate = :date', { date: targetDate })
       .andWhere('entry.status = :status', { status: QueueStatus.WAITING })
       .getMany();
@@ -153,7 +160,7 @@ export class QueueService {
     const saved = await this.entryRepo.save(entry);
 
     // Trigger tính lại queue
-    await this.recalculateQueue(entry.visit.roomId, entry.visit.visitDate);
+    await this.recalculateQueue(entry.roomId, entry.visit.visitDate);
     return saved;
   }
 
@@ -179,7 +186,7 @@ export class QueueService {
     const saved = await this.entryRepo.save(entry);
 
     // Trigger tính lại queue
-    await this.recalculateQueue(entry.visit.roomId, entry.visit.visitDate);
+    await this.recalculateQueue(entry.roomId, entry.visit.visitDate);
     return saved;
   }
 
@@ -198,36 +205,37 @@ export class QueueService {
     entry.totalScore = breakdown.scoreP + breakdown.scoreT + breakdown.scoreS + breakdown.scoreC + dto.scoreF;
 
     const saved = await this.entryRepo.save(entry);
-    await this.recalculateQueue(entry.visit.roomId, entry.visit.visitDate);
+    await this.recalculateQueue(entry.roomId, entry.visit.visitDate);
     return saved;
   }
 
   // ===== Cập nhật P score khi thay đổi đối tượng trên lượt khám =====
-  async updatePScore(visitId: string, newScoreP: number): Promise<void> {
-    const entry = await this.entryRepo.findOne({
+  // Cập nhật tất cả entries WAITING của visit này (có thể nhiều phòng)
+  async updatePScore(visitId: string, newScoreP: number, visitDate: string): Promise<void> {
+    const entries = await this.entryRepo.find({
       where: { visitId, status: QueueStatus.WAITING },
-      relations: ['visit'],
     });
-    if (!entry) return;
+    if (!entries.length) return;
 
     const config = await this.configService.getScoreConfig();
-    const breakdown = this.scoreService.calculate(entry, config);
-
-    entry.scoreP = newScoreP;
-    entry.totalScore = newScoreP + breakdown.scoreT + breakdown.scoreS + breakdown.scoreC + entry.scoreF;
-    await this.entryRepo.save(entry);
-    await this.recalculateQueue(entry.visit.roomId, entry.visit.visitDate);
+    for (const entry of entries) {
+      const breakdown = this.scoreService.calculate(entry, config);
+      entry.scoreP = newScoreP;
+      entry.totalScore = newScoreP + breakdown.scoreT + breakdown.scoreS + breakdown.scoreC + entry.scoreF;
+      await this.entryRepo.save(entry);
+      await this.recalculateQueue(entry.roomId, visitDate);
+    }
   }
 
   // ===== Timer job: tính lại T(t) cho tất cả phòng đang hoạt động =====
   async recalculateAllActiveQueues(): Promise<void> {
     const today = format(new Date(), 'yyyy-MM-dd');
 
-    // Lấy tất cả roomId đang có bệnh nhân chờ hôm nay
+    // Lấy tất cả roomId đang có bệnh nhân chờ hôm nay (từ entry.roomId trực tiếp)
     const activeRooms = await this.entryRepo
       .createQueryBuilder('entry')
       .leftJoin('entry.visit', 'visit')
-      .select('DISTINCT visit."room_id"', 'roomId')
+      .select('DISTINCT entry."room_id"', 'roomId')
       .where('visit.visitDate = :date', { date: today })
       .andWhere('entry.status = :status', { status: QueueStatus.WAITING })
       .getRawMany();

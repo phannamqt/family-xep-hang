@@ -9,13 +9,13 @@ export default function QueuePage() {
   const [selectedRoomId, setSelectedRoomId] = useState<string>('');
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [entries, setEntries] = useState<QueueEntry[]>([]);
+  const [mobileTab, setMobileTab] = useState<'waiting' | 'in_room' | 'done'>('waiting');
 
   const { data: rooms = [] } = useQuery<ClinicRoom[]>({
     queryKey: ['rooms'],
     queryFn: roomsApi.getAll,
   });
 
-  // Socket realtime update — chỉ cập nhật state, không re-render toàn bộ
   const onSocketUpdate = useCallback((data: QueueEntry[]) => {
     setEntries(data);
   }, []);
@@ -34,44 +34,59 @@ export default function QueuePage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-4">
-        <h2 className="text-lg font-bold text-gray-800">Xếp hàng</h2>
+      <div className="bg-white border-b border-gray-200 px-3 md:px-6 py-2 md:py-3 flex flex-wrap items-center gap-2">
         <select
-          className="px-3 py-1.5 border border-gray-300 rounded-md text-sm"
+          className="flex-1 min-w-0 px-2 py-2 border border-gray-300 rounded-md text-sm"
           value={selectedRoomId}
           onChange={e => setSelectedRoomId(e.target.value)}
         >
-          <option value="">-- Chọn phòng khám --</option>
+          <option value="">-- Chọn phòng --</option>
           {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
         </select>
-        <input type="date" className="px-3 py-1.5 border border-gray-300 rounded-md text-sm"
+        <input type="date" className="px-2 py-2 border border-gray-300 rounded-md text-sm"
           value={date} onChange={e => setDate(e.target.value)} />
         {selectedRoomId && (
-          <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">● Realtime</span>
+          <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full whitespace-nowrap">● Realtime</span>
         )}
       </div>
 
       {!selectedRoomId ? (
-        <div className="flex-1 flex items-center justify-center text-gray-400">
+        <div className="flex-1 flex items-center justify-center text-gray-400 text-sm px-4 text-center">
           Chọn phòng khám để xem hàng đợi
         </div>
       ) : (
-        <div className="flex-1 flex gap-0 overflow-hidden">
-          {/* Cột 1: Chờ khám */}
-          <WaitingColumn
-            entries={waiting}
-            room={room}
-          />
+        <>
+          {/* Mobile tab bar */}
+          <div className="md:hidden flex border-b border-gray-200 bg-white shrink-0">
+            {([
+              { key: 'waiting', label: 'Chờ', count: waiting.length, color: 'text-blue-600' },
+              { key: 'in_room', label: 'Đang khám', count: inRoom.length, color: 'text-orange-500' },
+              { key: 'done', label: 'Xong', count: done.length, color: 'text-green-600' },
+            ] as const).map(tab => (
+              <button key={tab.key} onClick={() => setMobileTab(tab.key)}
+                className={`flex-1 py-2.5 text-xs font-medium border-b-2 transition-colors ${mobileTab === tab.key ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500'}`}>
+                {tab.label} <span className={`font-bold ${tab.color}`}>{tab.count}</span>
+              </button>
+            ))}
+          </div>
 
-          {/* Cột 2: Đang khám */}
-          <InRoomColumn
-            entries={inRoom}
-            room={room}
-          />
+          {/* Desktop: 3 cột | Mobile: 1 tab */}
+          <div className="flex-1 overflow-hidden flex">
+            {/* Desktop columns */}
+            <div className="hidden md:flex flex-1 gap-0 overflow-hidden">
+              <WaitingColumn entries={waiting} room={room} />
+              <InRoomColumn entries={inRoom} room={room} />
+              <DoneColumn entries={done} />
+            </div>
 
-          {/* Cột 3: Đã khám */}
-          <DoneColumn entries={done} />
-        </div>
+            {/* Mobile single panel */}
+            <div className="flex md:hidden flex-1 overflow-hidden">
+              {mobileTab === 'waiting' && <WaitingColumn entries={waiting} room={room} />}
+              {mobileTab === 'in_room' && <InRoomColumn entries={inRoom} room={room} />}
+              {mobileTab === 'done' && <DoneColumn entries={done} />}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

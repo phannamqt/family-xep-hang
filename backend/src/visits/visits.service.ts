@@ -1,7 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  BadRequestException,
   forwardRef,
   Inject,
 } from '@nestjs/common';
@@ -84,12 +83,11 @@ export class VisitsService {
     visit.categoryIds = dto.categoryIds;
     await this.visitRepo.save(visit);
 
-    // Tính lại scoreP và emit socket nếu đã check-in
-    if (visit.roomId) {
+    // Tính lại scoreP cho tất cả QueueEntry đang chờ của visit này
+    if (visit.checkInAt) {
       const categories = await this.categoryRepo.findBy({ id: In(dto.categoryIds) });
       const newScoreP = categories.reduce((sum, c) => sum + c.scoreP, 0);
-      await this.queueService.updatePScore(id, newScoreP);
-      await this.queueGateway.emitQueueUpdate(visit.roomId, visit.visitDate);
+      await this.queueService.updatePScore(id, newScoreP, visit.visitDate);
     }
 
     return this.findOne(id);
@@ -98,36 +96,24 @@ export class VisitsService {
   async checkIn(dto: CheckInDto): Promise<any> {
     const visit = await this.visitRepo.findOne({
       where: { visitCode: dto.visitCode },
-      relations: ['patient', 'room'],
+      relations: ['patient'],
     });
     if (!visit) throw new NotFoundException(`Không tìm thấy lượt khám: ${dto.visitCode}`);
 
-    if (visit.checkInAt) {
-      throw new BadRequestException(
-        `Lượt khám ${dto.visitCode} đã check-in lúc ${new Date(visit.checkInAt).toLocaleTimeString('vi-VN')}`,
-      );
+    // Ghi nhận lần check-in đầu tiên (chỉ set một lần)
+    if (!visit.checkInAt) {
+      visit.checkInAt = new Date();
+      await this.visitRepo.save(visit);
     }
-
-    // Gán phòng khám tại thời điểm check-in
-    visit.roomId = dto.roomId;
-    visit.checkInType = dto.type;
-    visit.checkInAt = new Date();
-    await this.visitRepo.save(visit);
-
-    // Fetch full visit với categories để tính scoreP
-    const fullVisit = await this.visitRepo.findOne({
-      where: { id: visit.id },
-      relations: ['patient', 'room'],
-    });
 
     const categories = await this.categoryRepo.findBy({ id: In(visit.categoryIds) });
     const scoreP = categories.reduce((sum, c) => sum + c.scoreP, 0);
 
-    // Đẩy vào queue
-    await this.queueService.addToQueue(fullVisit, scoreP);
-    await this.queueGateway.emitQueueUpdate(dto.roomId, fullVisit.visitDate);
+    // Tạo QueueEntry cho phòng này (cho phép cùng visit vào nhiều phòng)
+    await this.queueService.addToQueue(visit, scoreP, dto.roomId, dto.type);
+    await this.queueGateway.emitQueueUpdate(dto.roomId, visit.visitDate);
 
-    const [enriched] = await this.attachCategories([fullVisit]);
+    const [enriched] = await this.attachCategories([visit]);
     return enriched;
   }
 

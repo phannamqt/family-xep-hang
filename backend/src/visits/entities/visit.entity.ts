@@ -10,12 +10,9 @@ import {
 } from 'typeorm';
 import { Patient } from '../../patients/entities/patient.entity';
 import { ClinicRoom } from '../../rooms/entities/clinic-room.entity';
-import { QueueEntry } from '../../queue/entities/queue-entry.entity';
+import { QueueEntry, CheckInType } from '../../queue/entities/queue-entry.entity';
 
-export enum CheckInType {
-  NEW = 'new',
-  RESULT = 'result',
-}
+export { CheckInType };
 
 @Entity('visits')
 export class Visit {

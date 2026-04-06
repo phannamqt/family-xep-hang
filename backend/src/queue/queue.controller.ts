@@ -33,7 +33,7 @@ export class QueueController {
   async inviteToRoom(@Body() dto: InviteToRoomDto) {
     const entry = await this.queueService.inviteToRoom(dto);
     const date = entry.visit?.visitDate ?? format(new Date(), 'yyyy-MM-dd');
-    await this.queueGateway.emitQueueUpdate(entry.visit?.roomId ?? '', date);
+    await this.queueGateway.emitQueueUpdate(entry.roomId ?? '', date);
     return entry;
   }
 
@@ -42,7 +42,7 @@ export class QueueController {
   async markDone(@Param('id') id: string) {
     const entry = await this.queueService.markDone(id);
     const date = entry.visit?.visitDate ?? format(new Date(), 'yyyy-MM-dd');
-    await this.queueGateway.emitQueueUpdate(entry.visit?.roomId ?? '', date);
+    await this.queueGateway.emitQueueUpdate(entry.roomId ?? '', date);
     return entry;
   }
 
@@ -51,7 +51,7 @@ export class QueueController {
   async skip(@Param('id') id: string) {
     const entry = await this.queueService.skipEntry(id);
     const date = entry.visit?.visitDate ?? format(new Date(), 'yyyy-MM-dd');
-    await this.queueGateway.emitQueueUpdate(entry.visit?.roomId ?? '', date);
+    await this.queueGateway.emitQueueUpdate(entry.roomId ?? '', date);
     return entry;
   }
 
@@ -60,7 +60,7 @@ export class QueueController {
   async updateFairness(@Body() dto: UpdateFairnessDto) {
     const entry = await this.queueService.updateFairness(dto);
     const date = entry.visit?.visitDate ?? format(new Date(), 'yyyy-MM-dd');
-    await this.queueGateway.emitQueueUpdate(entry.visit?.roomId ?? '', date);
+    await this.queueGateway.emitQueueUpdate(entry.roomId ?? '', date);
     return entry;
   }
 }

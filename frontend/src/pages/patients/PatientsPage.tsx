@@ -50,71 +50,79 @@ export default function PatientsPage() {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-800">Bệnh nhân</h2>
+    <div className="p-4 md:p-6">
+      <div className="flex items-center justify-between mb-4 gap-2">
+        <h2 className="text-lg md:text-xl font-bold text-gray-800">Bệnh nhân</h2>
         <button onClick={() => { setShowForm(true); setEditId(null); setForm({ ...emptyForm }); }}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
-          + Thêm bệnh nhân
+          className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+          + Thêm
         </button>
       </div>
 
-      <input placeholder="Tìm theo tên, SĐT, CCCD..." className="w-full max-w-md px-4 py-2 border border-gray-300 rounded-md text-sm mb-4"
+      <input placeholder="Tìm theo tên, SĐT, CCCD..."
+        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm mb-4"
         value={search} onChange={e => setSearch(e.target.value)} />
 
-      {/* Form modal */}
+      {/* Form modal — full screen on mobile */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg shadow-xl">
-            <h3 className="font-semibold text-gray-800 mb-4">{editId ? 'Chỉnh sửa' : 'Thêm'} bệnh nhân</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <label className="text-xs text-gray-500">Họ và tên *</label>
-                <input className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+        <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50">
+          <div className="bg-white w-full md:max-w-lg md:rounded-xl rounded-t-2xl p-5 shadow-xl max-h-[90dvh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-800">{editId ? 'Chỉnh sửa' : 'Thêm'} bệnh nhân</h3>
+              <button onClick={() => setShowForm(false)} className="text-gray-400 text-xl px-1">✕</button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-500 font-medium">Họ và tên *</label>
+                <input className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm"
                   value={form.fullName} onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))} />
               </div>
-              <div>
-                <label className="text-xs text-gray-500">Ngày sinh *</label>
-                <input type="date" className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-                  value={form.dateOfBirth} onChange={e => setForm(f => ({ ...f, dateOfBirth: e.target.value }))} />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-500 font-medium">Ngày sinh *</label>
+                  <input type="date" className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm"
+                    value={form.dateOfBirth} onChange={e => setForm(f => ({ ...f, dateOfBirth: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 font-medium">Giới tính</label>
+                  <select className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm"
+                    value={form.gender} onChange={e => setForm(f => ({ ...f, gender: e.target.value as any }))}>
+                    <option value="male">Nam</option>
+                    <option value="female">Nữ</option>
+                    <option value="other">Khác</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-500 font-medium">Số điện thoại</label>
+                  <input className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm"
+                    value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 font-medium">CCCD</label>
+                  <input className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm"
+                    value={form.idCard} onChange={e => setForm(f => ({ ...f, idCard: e.target.value }))} />
+                </div>
               </div>
               <div>
-                <label className="text-xs text-gray-500">Giới tính</label>
-                <select className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-                  value={form.gender} onChange={e => setForm(f => ({ ...f, gender: e.target.value as any }))}>
-                  <option value="male">Nam</option>
-                  <option value="female">Nữ</option>
-                  <option value="other">Khác</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs text-gray-500">Số điện thoại</label>
-                <input className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-                  value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500">CCCD</label>
-                <input className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-                  value={form.idCard} onChange={e => setForm(f => ({ ...f, idCard: e.target.value }))} />
-              </div>
-              <div className="col-span-2">
-                <label className="text-xs text-gray-500">Địa chỉ</label>
-                <input className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                <label className="text-xs text-gray-500 font-medium">Địa chỉ</label>
+                <input className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm"
                   value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
               </div>
-              <div className="col-span-2">
-                <label className="text-xs text-gray-500">Ghi chú</label>
-                <textarea rows={2} className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+              <div>
+                <label className="text-xs text-gray-500 font-medium">Ghi chú</label>
+                <textarea rows={2} className="w-full mt-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm"
                   value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
               </div>
             </div>
             <div className="flex gap-2 mt-4">
-              <button onClick={() => saveMut.mutate(form)}
-                className="flex-1 bg-blue-600 text-white py-2 rounded-md text-sm hover:bg-blue-700">
-                {editId ? 'Cập nhật' : 'Thêm'}
+              <button onClick={() => saveMut.mutate(form)} disabled={saveMut.isPending}
+                className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+                {saveMut.isPending ? 'Đang lưu...' : (editId ? 'Cập nhật' : 'Thêm')}
               </button>
               <button onClick={() => setShowForm(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50">
+                className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
                 Huỷ
               </button>
             </div>
@@ -122,8 +130,8 @@ export default function PatientsPage() {
         </div>
       )}
 
-      {/* Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      {/* Desktop table */}
+      <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
@@ -139,8 +147,7 @@ export default function PatientsPage() {
               <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50">
                 <td className="px-4 py-3 font-medium text-gray-800">{p.fullName}</td>
                 <td className="px-4 py-3 text-gray-600">
-                  {p.dateOfBirth ? `${calcAge(p.dateOfBirth)} tuổi` : '—'} ·{' '}
-                  {p.gender === 'male' ? 'Nam' : p.gender === 'female' ? 'Nữ' : 'Khác'}
+                  {p.dateOfBirth ? `${calcAge(p.dateOfBirth)} tuổi` : '—'} · {p.gender === 'male' ? 'Nam' : p.gender === 'female' ? 'Nữ' : 'Khác'}
                 </td>
                 <td className="px-4 py-3 text-gray-600">{p.phone ?? '—'}</td>
                 <td className="px-4 py-3 text-gray-600">{p.idCard ?? '—'}</td>
@@ -155,6 +162,31 @@ export default function PatientsPage() {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-2">
+        {patients.map(p => (
+          <div key={p.id} className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-gray-800">{p.fullName}</div>
+                <div className="text-sm text-gray-500 mt-0.5">
+                  {p.dateOfBirth ? `${calcAge(p.dateOfBirth)} tuổi` : '—'} · {p.gender === 'male' ? 'Nam' : p.gender === 'female' ? 'Nữ' : 'Khác'}
+                  {p.phone ? ` · ${p.phone}` : ''}
+                </div>
+                {p.idCard && <div className="text-xs text-gray-400 mt-0.5">CCCD: {p.idCard}</div>}
+              </div>
+              <div className="flex gap-3 shrink-0">
+                <button onClick={() => startEdit(p)} className="text-blue-600 text-sm font-medium">Sửa</button>
+                <button onClick={() => deleteMut.mutate(p.id)} className="text-red-500 text-sm font-medium">Xoá</button>
+              </div>
+            </div>
+          </div>
+        ))}
+        {patients.length === 0 && (
+          <div className="text-center py-12 text-gray-400 text-sm">Không có bệnh nhân nào</div>
+        )}
       </div>
     </div>
   );

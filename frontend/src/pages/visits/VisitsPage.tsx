@@ -49,15 +49,15 @@ export default function VisitsPage() {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-800">Lượt khám</h2>
+    <div className="p-4 md:p-6">
+      <div className="flex items-center justify-between mb-4 gap-2">
+        <h2 className="text-lg md:text-xl font-bold text-gray-800">Lượt khám</h2>
         <div className="flex gap-2 items-center">
-          <input type="date" className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+          <input type="date" className="px-2 py-2 border border-gray-300 rounded-lg text-sm"
             value={date} onChange={e => setDate(e.target.value)} />
           <button onClick={() => setShowForm(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
-            + Tạo lượt khám
+            className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 whitespace-nowrap">
+            + Tạo
           </button>
         </div>
       </div>
@@ -89,9 +89,12 @@ export default function VisitsPage() {
 
       {/* Create form modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto">
-            <h3 className="font-semibold text-gray-800 mb-4">Tạo lượt khám mới</h3>
+        <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50">
+          <div className="bg-white w-full md:max-w-md md:rounded-xl rounded-t-2xl p-5 shadow-xl max-h-[90dvh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-800">Tạo lượt khám mới</h3>
+              <button onClick={() => setShowForm(false)} className="text-gray-400 text-xl px-1">✕</button>
+            </div>
             <div className="space-y-4">
               <div>
                 <label className="text-xs text-gray-500 font-medium">Bệnh nhân *</label>
@@ -165,15 +168,14 @@ export default function VisitsPage() {
         </div>
       )}
 
-      {/* Visits table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      {/* Desktop table */}
+      <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Mã lượt</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Bệnh nhân</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Đối tượng</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Phòng</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Check-in</th>
             </tr>
           </thead>
@@ -189,14 +191,9 @@ export default function VisitsPage() {
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-1">
                     {(v.categories ?? []).map(cat => (
-                      <span key={cat.id} className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">
-                        {cat.name}
-                      </span>
+                      <span key={cat.id} className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{cat.name}</span>
                     ))}
                   </div>
-                </td>
-                <td className="px-4 py-3 text-gray-500 text-xs">
-                  {v.room?.name ?? <span className="text-gray-300">Chưa check-in</span>}
                 </td>
                 <td className="px-4 py-3">
                   {v.checkInAt
@@ -207,10 +204,44 @@ export default function VisitsPage() {
               </tr>
             ))}
             {visits.length === 0 && (
-              <tr><td colSpan={5} className="text-center py-8 text-gray-400">Không có lượt khám nào</td></tr>
+              <tr><td colSpan={4} className="text-center py-8 text-gray-400">Không có lượt khám nào</td></tr>
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-2">
+        {visits.map(v => (
+          <div key={v.id} className="bg-white rounded-lg border border-gray-200 p-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-gray-800 truncate">{v.patient?.fullName}</div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="font-mono text-xs text-blue-700 font-bold">{v.visitCode}</span>
+                  <button onClick={() => navigator.clipboard.writeText(v.visitCode)}
+                    className="text-xs text-gray-400">copy</button>
+                </div>
+              </div>
+              <div className="shrink-0 text-right">
+                {v.checkInAt
+                  ? <span className="text-green-600 text-xs">✓ {new Date(v.checkInAt).toLocaleTimeString('vi-VN')}</span>
+                  : <span className="text-gray-400 text-xs">Chưa check-in</span>
+                }
+              </div>
+            </div>
+            {(v.categories ?? []).length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {(v.categories ?? []).map(cat => (
+                  <span key={cat.id} className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{cat.name}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+        {visits.length === 0 && (
+          <div className="text-center py-8 text-gray-400 text-sm">Không có lượt khám nào</div>
+        )}
       </div>
     </div>
   );
