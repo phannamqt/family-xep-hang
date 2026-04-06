@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { QueueService } from './queue.service';
 import { QueueGateway } from './queue.gateway';
-import { InviteToRoomDto, UpdateFairnessDto } from './dto/queue.dto';
+import { InviteToRoomDto, UpdateFairnessDto, UpdateQueuedAtDto } from './dto/queue.dto';
 import { format } from 'date-fns';
 
 @Controller('queue')
@@ -59,6 +59,15 @@ export class QueueController {
   @Patch('fairness')
   async updateFairness(@Body() dto: UpdateFairnessDto) {
     const entry = await this.queueService.updateFairness(dto);
+    const date = entry.visit?.visitDate ?? format(new Date(), 'yyyy-MM-dd');
+    await this.queueGateway.emitQueueUpdate(entry.roomId ?? '', date);
+    return entry;
+  }
+
+  // PATCH /queue/queued-at — Cập nhật thời gian bắt đầu chờ
+  @Patch('queued-at')
+  async updateQueuedAt(@Body() dto: UpdateQueuedAtDto) {
+    const entry = await this.queueService.updateQueuedAt(dto);
     const date = entry.visit?.visitDate ?? format(new Date(), 'yyyy-MM-dd');
     await this.queueGateway.emitQueueUpdate(entry.roomId ?? '', date);
     return entry;

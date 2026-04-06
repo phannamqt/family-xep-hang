@@ -7,7 +7,11 @@ import { Visit } from '../visits/entities/visit.entity';
 import { CheckInType } from '../visits/entities/visit.entity';
 import { ConfigService } from '../config/config.service';
 import { ScoreService, ScoreBreakdown } from './score.service';
-import { InviteToRoomDto, UpdateFairnessDto } from './dto/queue.dto';
+import {
+  InviteToRoomDto,
+  UpdateFairnessDto,
+  UpdateQueuedAtDto,
+} from './dto/queue.dto';
 import { PriorityCategory } from '../config/entities/priority-category.entity';
 
 export interface QueueEntryWithScore extends QueueEntry {
@@ -219,6 +223,26 @@ export class QueueService {
       breakdown.scoreS +
       breakdown.scoreC +
       dto.scoreF;
+
+    const saved = await this.entryRepo.save(entry);
+    await this.recalculateQueue(entry.roomId, entry.visit.visitDate);
+    return saved;
+  }
+
+  // ===== Cập nhật thời gian bắt đầu chờ (queuedAt) =====
+  async updateQueuedAt(dto: UpdateQueuedAtDto): Promise<QueueEntry> {
+    const entry = await this.entryRepo.findOne({
+      where: { id: dto.queueEntryId },
+      relations: ['visit'],
+    });
+    if (!entry) throw new NotFoundException('Không tìm thấy lượt xếp hàng');
+
+    entry.queuedAt = new Date(dto.queuedAt);
+    const config = await this.configService.getScoreConfig();
+    const breakdown = this.scoreService.calculate(entry, config);
+    entry.scoreT = breakdown.scoreT;
+    entry.scoreC = breakdown.scoreC;
+    entry.totalScore = breakdown.total;
 
     const saved = await this.entryRepo.save(entry);
     await this.recalculateQueue(entry.roomId, entry.visit.visitDate);

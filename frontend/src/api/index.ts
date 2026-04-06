@@ -61,4 +61,6 @@ export const queueApi = {
   skip: (entryId: string) => api.post(`/queue/${entryId}/skip`).then(r => r.data),
   updateFairness: (queueEntryId: string, scoreF: number) =>
     api.patch('/queue/fairness', { queueEntryId, scoreF }).then(r => r.data),
+  updateQueuedAt: (queueEntryId: string, queuedAt: string) =>
+    api.patch('/queue/queued-at', { queueEntryId, queuedAt }).then(r => r.data),
 };

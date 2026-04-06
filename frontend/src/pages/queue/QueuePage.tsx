@@ -101,6 +101,7 @@ function WaitingColumn({ entries, room }: {
   const qc = useQueryClient();
   const [inviteModal, setInviteModal] = useState<QueueEntry | null>(null);
   const [fairnessInput, setFairnessInput] = useState<Record<string, string>>({});
+  const [queuedAtInput, setQueuedAtInput] = useState<Record<string, string>>({});
   const [checkInCode, setCheckInCode] = useState('');
   const [checkInType, setCheckInType] = useState<'new' | 'result'>('new');
   const [checkInMsg, setCheckInMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -119,6 +120,12 @@ function WaitingColumn({ entries, room }: {
       toast.success('Đã cập nhật điểm F');
     },
     onError: (e: unknown) => toast.error(extractErrorMessage(e, 'Cập nhật điểm F thất bại')),
+  });
+
+  const queuedAtMut = useMutation({
+    mutationFn: ({ id, queuedAt }: { id: string; queuedAt: string }) =>
+      queueApi.updateQueuedAt(id, queuedAt),
+    onError: (e: unknown) => toast.error(extractErrorMessage(e, 'Cập nhật thời gian thất bại')),
   });
 
   const checkInMut = useMutation({
@@ -186,6 +193,16 @@ function WaitingColumn({ entries, room }: {
               const val = parseFloat(fairnessInput[entry.id] ?? '0');
               if (!isNaN(val)) fairnessMut.mutate({ id: entry.id, scoreF: val });
             }}
+            queuedAtValue={queuedAtInput[entry.id] ?? new Date(entry.queuedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+            onQueuedAtChange={val => setQueuedAtInput(f => ({ ...f, [entry.id]: val }))}
+            onQueuedAtSave={() => {
+              const raw = queuedAtInput[entry.id];
+              if (!raw) return;
+              // Ghép với ngày hôm nay của visit
+              const visitDate = entry.visit?.visitDate ?? new Date().toISOString().slice(0, 10);
+              const iso = new Date(`${visitDate}T${raw}:00`).toISOString();
+              queuedAtMut.mutate({ id: entry.id, queuedAt: iso });
+            }}
             onSkip={() => skipMut.mutate(entry.id)}
             onInvite={() => setInviteModal(entry)}
           />
@@ -207,12 +224,15 @@ function WaitingColumn({ entries, room }: {
 }
 
 // ===== Card bệnh nhân chờ =====
-function WaitingCard({ entry, rank, fairnessValue, onFairnessChange, onFairnessSave, onSkip, onInvite }: {
+function WaitingCard({ entry, rank, fairnessValue, onFairnessChange, onFairnessSave, queuedAtValue, onQueuedAtChange, onQueuedAtSave, onSkip, onInvite }: {
   entry: QueueEntry;
   rank: number;
   fairnessValue: string;
   onFairnessChange: (val: string) => void;
   onFairnessSave: () => void;
+  queuedAtValue: string;
+  onQueuedAtChange: (val: string) => void;
+  onQueuedAtSave: () => void;
   onSkip: () => void;
   onInvite: () => void;
 }) {
@@ -274,13 +294,24 @@ function WaitingCard({ entry, rank, fairnessValue, onFairnessChange, onFairnessS
         </div>
       </div>
 
-      {/* Fairness input + actions */}
+      {/* queuedAt + Fairness + actions */}
       <div className="flex items-center gap-2 mt-2">
-        <div className="flex items-center gap-1 flex-1">
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-gray-400">Chờ từ:</span>
+          <input
+            type="time"
+            className="w-20 px-1 py-0.5 border border-gray-300 rounded text-xs text-center"
+            value={queuedAtValue}
+            onChange={e => onQueuedAtChange(e.target.value)}
+            onBlur={onQueuedAtSave}
+            onKeyDown={e => e.key === 'Enter' && onQueuedAtSave()}
+          />
+        </div>
+        <div className="flex items-center gap-1">
           <span className="text-xs text-gray-400">F:</span>
           <input
             type="number"
-            className="w-16 px-1.5 py-0.5 border border-gray-300 rounded text-xs text-center"
+            className="w-14 px-1.5 py-0.5 border border-gray-300 rounded text-xs text-center"
             value={fairnessValue}
             onChange={e => onFairnessChange(e.target.value)}
             onBlur={onFairnessSave}
