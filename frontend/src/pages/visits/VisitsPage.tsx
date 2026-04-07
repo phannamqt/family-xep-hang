@@ -244,7 +244,10 @@ export default function VisitsPage() {
                   <div className="font-mono font-bold text-blue-700 text-xs whitespace-nowrap">{v.visitCode}</div>
                   <CopyButton text={v.visitCode} className="text-xs" />
                 </td>
-                <td className="px-4 py-3 font-medium text-gray-800">{v.patient?.fullName}</td>
+                <td className="px-4 py-3">
+                  <div className="font-medium text-gray-800">{v.patient?.fullName}</div>
+                  {v.patient?.patientCode && <div className="text-xs text-blue-500 font-mono">#{v.patient.patientCode}</div>}
+                </td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-1">
                     {(v.categories ?? []).map((cat: any) => (

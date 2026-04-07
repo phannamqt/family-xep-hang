@@ -5,6 +5,7 @@ import {
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { Visit } from '../../visits/entities/visit.entity';
 
@@ -18,6 +19,10 @@ export enum Gender {
 export class Patient {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Index({ unique: true, sparse: true })
+  @Column({ type: 'int', nullable: true })
+  patientCode: number | null; // Mã số bệnh nhân dạng số, bắt đầu từ 100000
 
   @Column({ length: 150 })
   fullName: string;

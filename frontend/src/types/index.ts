@@ -39,6 +39,7 @@ export interface ClinicRoom {
 // ===== Patients =====
 export interface Patient {
   id: string;
+  patientCode?: number;
   fullName: string;
   dateOfBirth: string;
   gender: 'male' | 'female' | 'other';

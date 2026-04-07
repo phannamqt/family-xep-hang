@@ -250,7 +250,10 @@ function WaitingCard({ entry, rank, fairnessValue, onFairnessChange, onFairnessS
 
       <div className="flex items-start justify-between">
         <div className="flex-1 ml-2">
-          <div className="font-medium text-sm text-gray-800">{entry.visit?.patient?.fullName}</div>
+          <div className="font-medium text-sm text-gray-800">
+            {entry.visit?.patient?.fullName}
+            {entry.visit?.patient?.patientCode && <span className="ml-1.5 text-xs text-blue-400 font-mono font-normal">#{entry.visit.patient.patientCode}</span>}
+          </div>
           <div className="text-xs text-gray-400 mt-0.5">
             {(entry.visit?.categories ?? []).map(c => c.name).join(', ') || '—'} · {waitMin} phút chờ
           </div>
@@ -428,7 +431,10 @@ function InRoomColumn({ entries, room }: {
 
               {patient ? (
                 <div>
-                  <div className="font-medium text-sm text-gray-800">{patient.visit?.patient?.fullName}</div>
+                  <div className="font-medium text-sm text-gray-800">
+                    {patient.visit?.patient?.fullName}
+                    {patient.visit?.patient?.patientCode && <span className="ml-1.5 text-xs text-blue-400 font-mono font-normal">#{patient.visit.patient.patientCode}</span>}
+                  </div>
                   <div className="text-xs text-gray-400">{(patient.visit?.categories ?? []).map(c => c.name).join(', ') || '—'}</div>
                   <div className="text-xs text-gray-400">
                     Vào lúc: {patient.startedAt ? new Date(patient.startedAt).toLocaleTimeString('vi-VN') : '—'}
@@ -497,7 +503,10 @@ function DoneColumn({ entries }: { entries: QueueEntry[] }) {
 
           return (
             <div key={entry.id} className="bg-white rounded-lg border border-gray-200 p-3">
-              <div className="font-medium text-sm text-gray-700">{entry.visit?.patient?.fullName}</div>
+              <div className="font-medium text-sm text-gray-700">
+                {entry.visit?.patient?.fullName}
+                {entry.visit?.patient?.patientCode && <span className="ml-1.5 text-xs text-blue-400 font-mono font-normal">#{entry.visit.patient.patientCode}</span>}
+              </div>
               <div className="text-xs text-gray-400">{(entry.visit?.categories ?? []).map(c => c.name).join(', ') || '—'}</div>
               <div className="text-xs text-gray-400 mt-1 space-y-0.5">
                 <div>Check-in: {checkinTime ? checkinTime.toLocaleTimeString('vi-VN') : '—'}</div>

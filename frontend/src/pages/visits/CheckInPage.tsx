@@ -61,7 +61,8 @@ export default function CheckInPage() {
           code: r.code.trim().toUpperCase(),
           initialScore: parseFloat(r.initialScore) || 0,
         });
-        updated[i] = { ...updated[i], result: { ok: true, text: `✓ ${visit.patient?.fullName}` } };
+        const codeStr = visit.patient?.patientCode ? ` #${visit.patient.patientCode}` : '';
+        updated[i] = { ...updated[i], result: { ok: true, text: `✓ ${visit.patient?.fullName}${codeStr}` } };
       } catch (err) {
         updated[i] = { ...updated[i], result: { ok: false, text: extractErrorMessage(err, 'Thất bại') } };
       }
