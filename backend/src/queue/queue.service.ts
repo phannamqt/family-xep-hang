@@ -139,35 +139,35 @@ export class QueueService {
 
     // Chỉ detect pushback khi có sự kiện thực sự (không phải scheduler định kỳ)
     if (detectPushback) {
-      // Tính newRank CHỈ trong nhóm existing (so sánh ngang nhau)
+      // currentRank = vị trí visual (theo điểm T+C, TRƯỚC khi cộng S bù)
+      // Lưu trước, dùng làm oldRank cho lần tính tiếp theo
+      waitingEntries.forEach((e, idx) => { e.currentRank = idx + 1; });
+
+      // newRank CHỈ trong nhóm existing (không tính entry mới)
       const existingAfter = [...existingEntries].sort((a, b) => b.totalScore - a.totalScore);
       const newRankAmongExisting = new Map<string, number>();
       existingAfter.forEach((e, idx) => newRankAmongExisting.set(e.id, idx + 1));
 
       for (const entry of waitingEntries) {
         if (newEntries.includes(entry)) {
-          // Entry mới: chỉ set previousRank tạm, currentRank sẽ set sau re-sort
-          entry.previousRank = entry.currentRank ?? 999;
+          entry.previousRank = entry.currentRank!;
           continue;
         }
 
-        const oldRank = oldRanks.get(entry.id) ?? 1;
-        const newRank = newRankAmongExisting.get(entry.id) ?? 1;
+        const oldRank = oldRanks.get(entry.id) ?? entry.currentRank!;
+        const newRank = newRankAmongExisting.get(entry.id) ?? entry.currentRank!;
+        entry.previousRank = oldRank;
 
-        const pushbackCount = config.pushbackPerStep ? newRank - oldRank : 1;
+        const pushbackCount = config.pushbackPerStep
+          ? Math.max(0, newRank - oldRank)
+          : newRank > oldRank ? 1 : 0;
         for (let p = 0; p < pushbackCount; p++) {
           const addedS = this.scoreService.getSkipScore(entry.autoSkipCount + 1, config.autoSkipScores);
           entry.scoreS += addedS;
           entry.autoSkipCount += 1;
           entry.totalScore += addedS;
         }
-
-        entry.previousRank = oldRank;
       }
-
-      // Re-sort sau khi áp pushback để currentRank phản ánh đúng vị trí cuối cùng
-      waitingEntries.sort((a, b) => b.totalScore - a.totalScore);
-      waitingEntries.forEach((e, idx) => { e.currentRank = idx + 1; });
     } else {
       waitingEntries.forEach((e, idx) => {
         e.currentRank = idx + 1;
