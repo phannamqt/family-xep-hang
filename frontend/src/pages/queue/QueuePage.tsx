@@ -193,7 +193,7 @@ function WaitingColumn({ entries, room }: {
               const val = parseFloat(fairnessInput[entry.id] ?? '0');
               if (!isNaN(val)) fairnessMut.mutate({ id: entry.id, scoreF: val });
             }}
-            queuedAtValue={queuedAtInput[entry.id] ?? new Date(entry.queuedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+            queuedAtValue={queuedAtInput[entry.id] ?? (() => { const d = new Date(entry.queuedAt); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; })()}
             onQueuedAtChange={val => setQueuedAtInput(f => ({ ...f, [entry.id]: val }))}
             onQueuedAtSave={() => {
               const raw = queuedAtInput[entry.id];
