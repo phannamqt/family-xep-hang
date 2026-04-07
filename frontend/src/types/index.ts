@@ -13,8 +13,6 @@ export interface ScoreConfig {
   timeCoefficient: number;
   skipScores: number[];
   autoSkipScore: number;
-  waitingScorePerMinute: number;
-  lateDeductionPerMinute: number;
 }
 
 // ===== Rooms =====
@@ -69,7 +67,6 @@ export interface ScoreBreakdown {
   scoreP: number;
   scoreT: number;
   scoreS: number;
-  scoreC: number;
   scoreF: number;
   total: number;
   waitingMinutes: number;

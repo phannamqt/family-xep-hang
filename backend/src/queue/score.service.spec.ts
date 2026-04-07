@@ -7,8 +7,6 @@ const mockConfig = (): ScoreConfig =>
     timeCoefficient: 0.04,
     skipScores: [20, 40, 60],
     autoSkipScore: 5,
-    waitingScorePerMinute: 1,
-    lateDeductionPerMinute: 1,
   }) as ScoreConfig;
 
 const mockEntry = (overrides: Partial<QueueEntry> = {}): QueueEntry =>
@@ -60,63 +58,9 @@ describe('ScoreService', () => {
     it('0 lần = 0', () => expect(service.getSkipScore(0, scores)).toBe(0));
   });
 
-  // ===== calcCheckInScore =====
-  describe('calcCheckInScore', () => {
-    it('không có appointmentTime: chỉ cộng điểm chờ', () => {
-      const entry = mockEntry({
-        queuedAt: new Date(Date.now() - 10 * 60 * 1000), // 10 phút trước
-        visit: null,
-      });
-      const score = service.calcCheckInScore(entry, mockConfig());
-      // 10 phút * 1 = ~10 (±1 phút lệch do thời gian chạy test)
-      expect(score).toBeGreaterThanOrEqual(9);
-      expect(score).toBeLessThanOrEqual(11);
-    });
-
-    it('đến đúng giờ: không trừ điểm', () => {
-      const appointmentTime = new Date(Date.now() - 5 * 60 * 1000); // hẹn 5 phút trước
-      const queuedAt = new Date(Date.now() - 5 * 60 * 1000);        // check-in đúng giờ
-      const entry = mockEntry({
-        queuedAt,
-        visit: { appointmentTime } as any,
-      });
-      const score = service.calcCheckInScore(entry, mockConfig());
-      // lateMinutes = 0, không trừ
-      expect(score).toBeGreaterThanOrEqual(4);
-    });
-
-    it('đến trễ 10 phút: trừ 10 điểm', () => {
-      const appointmentTime = new Date(Date.now() - 20 * 60 * 1000); // hẹn 20 phút trước
-      const queuedAt = new Date(Date.now() - 10 * 60 * 1000);        // check-in 10 phút trước (trễ 10 phút)
-      const entry = mockEntry({
-        queuedAt,
-        visit: { appointmentTime } as any,
-      });
-      const config = mockConfig(); // lateDeductionPerMinute = 1
-      const score = service.calcCheckInScore(entry, config);
-      // waitMinutes ~10, lateMinutes ~10
-      // score = 10*1 - 10*1 = ~0
-      expect(score).toBeGreaterThanOrEqual(-2);
-      expect(score).toBeLessThanOrEqual(2);
-    });
-
-    it('đến sớm: không cộng thêm, không trừ', () => {
-      const appointmentTime = new Date(Date.now() + 30 * 60 * 1000); // hẹn 30 phút nữa
-      const queuedAt = new Date(Date.now() - 5 * 60 * 1000);         // check-in 5 phút trước
-      const entry = mockEntry({
-        queuedAt,
-        visit: { appointmentTime } as any,
-      });
-      const score = service.calcCheckInScore(entry, mockConfig());
-      // lateMinutes < 0 → không trừ, chỉ cộng điểm chờ ~5
-      expect(score).toBeGreaterThanOrEqual(4);
-      expect(score).toBeLessThanOrEqual(6);
-    });
-  });
-
-  // ===== calculate =====
+  // ===== calculate: Score = P + T(t) + S + F =====
   describe('calculate', () => {
-    it('tổng hợp đúng P + T + S + C + F', () => {
+    it('tổng hợp đúng P + T + S + F', () => {
       const queuedAt = new Date(Date.now() - 10 * 60 * 1000); // 10 phút
       const entry = mockEntry({
         scoreP: 100,
@@ -131,10 +75,10 @@ describe('ScoreService', () => {
       expect(bd.scoreS).toBe(20);
       expect(bd.scoreF).toBe(5);
       expect(bd.waitingMinutes).toBeGreaterThanOrEqual(9);
-      expect(bd.total).toBeCloseTo(bd.scoreP + bd.scoreT + bd.scoreS + bd.scoreC + bd.scoreF, 1);
+      expect(bd.total).toBeCloseTo(bd.scoreP + bd.scoreT + bd.scoreS + bd.scoreF, 1);
     });
 
-    it('bệnh nhân vừa check-in (queuedAt = now): T ≈ 0', () => {
+    it('bệnh nhân vừa check-in (queuedAt = now): T = 0', () => {
       const entry = mockEntry({
         scoreP: 50,
         queuedAt: new Date(),

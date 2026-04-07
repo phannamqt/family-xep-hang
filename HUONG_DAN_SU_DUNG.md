@@ -217,8 +217,6 @@ Quản lý các nhóm ưu tiên và điểm P tương ứng.
 | **Hệ số T(t)** | Tốc độ tăng điểm theo thời gian. Tăng → người chờ lâu được ưu tiên mạnh hơn | Giữ 0.04 |
 | **Điểm S lỡ lượt** | Điểm bù khi bị bỏ qua thủ công lần 1/2/3 | 20, 40, 60 |
 | **Điểm S tự động** | Điểm bù mỗi lần bị đẩy lùi hạng | 5 |
-| **C: cộng mỗi phút chờ** | Điểm cộng thêm theo thời gian chờ tuyến tính | 1 |
-| **C: trừ đến trễ hẹn** | Trừ điểm nếu bệnh nhân có lịch hẹn mà đến trễ | 1 |
 
 #### Tab 3 — Phòng khám & Bác sĩ
 Thiết lập phòng khám và danh sách bác sĩ/slot:
@@ -232,6 +230,15 @@ Thiết lập phòng khám và danh sách bác sĩ/slot:
 
 ## 5. Giải thích điểm số
 
+Công thức tính điểm: **Score = P + T(t) + S + F**
+
+| Thành phần | Ý nghĩa |
+|---|---|
+| **P** | Điểm ưu tiên cố định theo đối tượng (Cấp cứu, VIP, Trẻ em...) |
+| **T(t)** | Điểm thời gian chờ: `t + 0.04 × t²` — càng chờ lâu tăng càng nhanh |
+| **S** | Điểm bù khi bị bỏ qua (thủ công: 20/40/60, tự động: 5/lần) |
+| **F** | Điểm thủ công do điều dưỡng/thư ký điều chỉnh |
+
 Khi hover vào điểm số của bệnh nhân, sẽ thấy bảng chi tiết:
 
 ```
@@ -241,11 +248,10 @@ P (Điểm theo đối tượng):  +130.0
    VIP                     +120
    Cao tuổi 60–69           +10
 T (15ph):                  +23.4    ← Điểm thời gian chờ, tăng mỗi phút
-S (skip/đẩy lùi):          +20.0    ← Điểm bù vì đã bị bỏ qua 1 lần
-C (check-in):               +15.0    ← Đã chờ 15 phút kể từ check-in
-F (thủ công):                +0.0    ← Chưa điều chỉnh
+S (Skip/đẩy lùi):          +20.0    ← Điểm bù vì đã bị bỏ qua 1 lần
+F (Thủ công):                +0.0    ← Chưa điều chỉnh
 ─────────────────────────────
-TỔNG:                       188.4
+TỔNG:                       173.4
 ```
 
 > Điểm **P** được liệt kê chi tiết từng danh mục ưu tiên kèm điểm riêng, giúp kiểm tra nhanh bệnh nhân đã được chọn đúng đối tượng chưa.

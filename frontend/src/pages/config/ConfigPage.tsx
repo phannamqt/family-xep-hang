@@ -230,21 +230,7 @@ function ScoreConfigTab() {
             onChange={e => setForm(f => ({ ...f, autoSkipScore: +e.target.value }))}
           />
         </div>
-        <div>
-          <label className="text-sm text-gray-600">C: điểm cộng mỗi phút chờ</label>
-          <input type="number" step="0.1" className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-            value={val.waitingScorePerMinute ?? 1}
-            onChange={e => setForm(f => ({ ...f, waitingScorePerMinute: +e.target.value }))}
-          />
-        </div>
-        <div>
-          <label className="text-sm text-gray-600">C: điểm trừ mỗi phút đến trễ hẹn</label>
-          <input type="number" step="0.1" className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-            value={val.lateDeductionPerMinute ?? 1}
-            onChange={e => setForm(f => ({ ...f, lateDeductionPerMinute: +e.target.value }))}
-          />
-        </div>
-        <button
+<button
           onClick={() => updateMut.mutate(form)}
           className="w-full bg-blue-600 text-white py-2 rounded-md text-sm hover:bg-blue-700"
         >

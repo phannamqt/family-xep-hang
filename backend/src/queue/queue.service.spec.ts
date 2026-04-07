@@ -14,8 +14,6 @@ const mockConfig = (): ScoreConfig =>
     timeCoefficient: 0.04,
     skipScores: [20, 40, 60],
     autoSkipScore: 5,
-    waitingScorePerMinute: 1,
-    lateDeductionPerMinute: 1,
   }) as ScoreConfig;
 
 const makeEntry = (overrides: Partial<QueueEntry> = {}): QueueEntry =>
@@ -27,7 +25,7 @@ const makeEntry = (overrides: Partial<QueueEntry> = {}): QueueEntry =>
     scoreP: 100,
     scoreT: 0,
     scoreS: 0,
-    scoreC: 0,
+
     scoreF: 0,
     totalScore: 100,
     skipCount: 0,

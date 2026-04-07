@@ -281,8 +281,7 @@ function WaitingCard({ entry, rank, fairnessValue, onFairnessChange, onFairnessS
                 ))}
                 <div className="flex justify-between pt-0.5"><span>T ({waitMin}ph):</span><span className="font-mono">+{bd.scoreT.toFixed(1)}</span></div>
                 <div className="flex justify-between"><span>S (Skip/đẩy lùi):</span><span className="font-mono">+{bd.scoreS.toFixed(1)}</span></div>
-                <div className="flex justify-between"><span>C (Check-in):</span><span className="font-mono">{bd.scoreC >= 0 ? '+' : ''}{bd.scoreC.toFixed(1)}</span></div>
-                <div className="flex justify-between"><span>F (Thủ công):</span><span className="font-mono">{entry.scoreF >= 0 ? '+' : ''}{entry.scoreF.toFixed(1)}</span></div>
+<div className="flex justify-between"><span>F (Thủ công):</span><span className="font-mono">{entry.scoreF >= 0 ? '+' : ''}{entry.scoreF.toFixed(1)}</span></div>
                 <div className="flex justify-between border-t border-gray-600 pt-1 font-bold">
                   <span>TỔNG:</span><span className="font-mono">{bd.total.toFixed(1)}</span>
                 </div>

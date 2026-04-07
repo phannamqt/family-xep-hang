@@ -96,7 +96,13 @@ export class QueueService {
   }
 
   // ===== Tính lại điểm toàn bộ queue đang chờ =====
-  async recalculateQueue(roomId: string, date?: string): Promise<QueueEntry[]> {
+  // detectPushback=true: dùng khi có sự kiện thực sự (check-in mới, skip, done)
+  // detectPushback=false: dùng khi scheduler cập nhật T(t) định kỳ
+  async recalculateQueue(
+    roomId: string,
+    date?: string,
+    detectPushback = true,
+  ): Promise<QueueEntry[]> {
     const targetDate = date ?? format(new Date(), 'yyyy-MM-dd');
     const config = await this.configService.getScoreConfig();
 
@@ -108,36 +114,42 @@ export class QueueService {
       .andWhere('entry.status = :status', { status: QueueStatus.WAITING })
       .getMany();
 
-    // Lưu rank cũ
+    // Lưu rank cũ theo thứ tự điểm hiện tại (trước khi recalculate)
     const oldRanks = new Map<string, number>();
-    waitingEntries.forEach((e, idx) => oldRanks.set(e.id, idx + 1));
+    [...waitingEntries]
+      .sort((a, b) => b.totalScore - a.totalScore)
+      .forEach((e, idx) => oldRanks.set(e.id, idx + 1));
 
-    // Tính lại score cho từng entry
+    // Tính lại score cho từng entry (Score = P + T(t) + S + F)
     for (const entry of waitingEntries) {
       const breakdown = this.scoreService.calculate(entry, config);
       entry.scoreT = breakdown.scoreT;
-      entry.scoreC = breakdown.scoreC;
       entry.totalScore = breakdown.total;
     }
 
     // Sắp xếp lại theo điểm
     waitingEntries.sort((a, b) => b.totalScore - a.totalScore);
 
-    // Detect bệnh nhân bị đẩy lùi → cộng điểm S tự động
-    for (let i = 0; i < waitingEntries.length; i++) {
-      const entry = waitingEntries[i];
-      const newRank = i + 1;
-      const oldRank = oldRanks.get(entry.id) ?? newRank;
+    // Chỉ detect pushback khi có sự kiện thực sự (không phải scheduler định kỳ)
+    if (detectPushback) {
+      for (let i = 0; i < waitingEntries.length; i++) {
+        const entry = waitingEntries[i];
+        const newRank = i + 1;
+        const oldRank = oldRanks.get(entry.id) ?? newRank;
 
-      if (newRank > oldRank) {
-        // Bị đẩy lùi → cộng autoSkipScore
-        entry.scoreS += config.autoSkipScore;
-        entry.autoSkipCount += 1;
-        entry.totalScore += config.autoSkipScore;
+        if (newRank > oldRank) {
+          entry.scoreS += config.autoSkipScore;
+          entry.autoSkipCount += 1;
+          entry.totalScore += config.autoSkipScore;
+        }
+
+        entry.previousRank = oldRank;
+        entry.currentRank = newRank;
       }
-
-      entry.previousRank = oldRank;
-      entry.currentRank = newRank;
+    } else {
+      waitingEntries.forEach((e, idx) => {
+        e.currentRank = idx + 1;
+      });
     }
 
     await this.entryRepo.save(waitingEntries);
@@ -221,7 +233,6 @@ export class QueueService {
       breakdown.scoreP +
       breakdown.scoreT +
       breakdown.scoreS +
-      breakdown.scoreC +
       dto.scoreF;
 
     const saved = await this.entryRepo.save(entry);
@@ -241,7 +252,6 @@ export class QueueService {
     const config = await this.configService.getScoreConfig();
     const breakdown = this.scoreService.calculate(entry, config);
     entry.scoreT = breakdown.scoreT;
-    entry.scoreC = breakdown.scoreC;
     entry.totalScore = breakdown.total;
 
     const saved = await this.entryRepo.save(entry);
@@ -263,7 +273,6 @@ export class QueueService {
     newScoreP: number,
     visitDate: string,
   ): Promise<void> {
-    // Load relations để scoreC tính đúng appointmentTime
     const entries = await this.entryRepo.find({
       where: { visitId, status: QueueStatus.WAITING },
       relations: ['visit'],
@@ -275,12 +284,7 @@ export class QueueService {
     for (const entry of entries) {
       const breakdown = this.scoreService.calculate(entry, config);
       entry.scoreP = newScoreP;
-      entry.totalScore =
-        newScoreP +
-        breakdown.scoreT +
-        breakdown.scoreS +
-        breakdown.scoreC +
-        entry.scoreF;
+      entry.totalScore = newScoreP + breakdown.scoreT + breakdown.scoreS + entry.scoreF;
       await this.entryRepo.save(entry);
       roomIds.add(entry.roomId);
     }
@@ -294,7 +298,6 @@ export class QueueService {
   async recalculateAllActiveQueues(): Promise<void> {
     const today = format(new Date(), 'yyyy-MM-dd');
 
-    // Lấy tất cả roomId đang có bệnh nhân chờ hôm nay (từ entry.roomId trực tiếp)
     const activeRooms = await this.entryRepo
       .createQueryBuilder('entry')
       .leftJoin('entry.visit', 'visit')
@@ -304,7 +307,8 @@ export class QueueService {
       .getRawMany();
 
     for (const { roomId } of activeRooms) {
-      await this.recalculateQueue(roomId, today);
+      // Không detect pushback khi scheduler chạy định kỳ
+      await this.recalculateQueue(roomId, today, false);
     }
   }
 
