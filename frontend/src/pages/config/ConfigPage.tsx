@@ -234,6 +234,20 @@ function ScoreConfigTab() {
           />
           <p className="text-xs text-gray-400 mt-1">Ví dụ: 5, 10, 20 → lần 1 +5, lần 2 +10, lần 3+ +20</p>
         </div>
+        <div>
+          <label className="text-sm text-gray-600">Điểm C: cộng mỗi phút chờ thực tế</label>
+          <input type="number" step="0.1" className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+            value={val.waitingScorePerMinute ?? 1}
+            onChange={e => setForm(f => ({ ...f, waitingScorePerMinute: +e.target.value }))}
+          />
+        </div>
+        <div>
+          <label className="text-sm text-gray-600">Điểm C: trừ mỗi phút đến trễ hẹn</label>
+          <input type="number" step="0.1" className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+            value={val.lateDeductionPerMinute ?? 1}
+            onChange={e => setForm(f => ({ ...f, lateDeductionPerMinute: +e.target.value }))}
+          />
+        </div>
 <button
           onClick={() => updateMut.mutate(form)}
           className="w-full bg-blue-600 text-white py-2 rounded-md text-sm hover:bg-blue-700"

@@ -98,7 +98,7 @@ BƯỚC 3 — Bác sĩ điều phối
 3. Chọn **bệnh nhân** từ danh sách
 4. Chọn **đối tượng ưu tiên** — có thể chọn nhiều cùng lúc:
 
-   | Đối tượng | Điểm ưu tiên |
+   | Đối tượng | Điểm ưu tiên (P) |
    |-----------|-------------|
    | Cấp cứu | 1000 |
    | VIP | 120 |
@@ -114,7 +114,7 @@ BƯỚC 3 — Bác sĩ điều phối
 
 5. Đặt **giờ hẹn** nếu có lịch hẹn trước *(tùy chọn)*
 6. Bấm **Tạo lượt khám**
-7. Hệ thống sinh ra **mã lượt khám** (ví dụ: `VK-20260406-003`)
+7. Hệ thống sinh ra **mã lượt khám** (ví dụ: `VK-20260407-003`)
 8. **Bấm "Copy mã"** → đưa cho bệnh nhân (in hoặc ghi tay)
 
 #### Sửa lượt khám
@@ -137,12 +137,16 @@ Khi cần điều chỉnh thông tin sau khi đã tạo (ví dụ: bệnh nhân 
 **Cách 1 — Trang Check-in riêng** (dành cho bàn lễ tân):
 
 1. Vào menu **✅ Check-in**
-2. Nhập **mã lượt khám** (ví dụ: `VK-20260406-003`)
-3. Chọn **Phòng khám** bệnh nhân sẽ vào
-4. Chọn loại:
+2. Nhập **mã lượt khám** vào ô đầu tiên (ví dụ: `VK-20260407-003`)
+   - Nhấn **Enter** để tự động xuống dòng tiếp theo — có thể nhập nhiều mã cùng lúc
+3. *(Tùy chọn)* Nhập **Điểm ban đầu** ở ô bên phải mỗi mã — dùng khi chuyển từ phòng này sang phòng khác và muốn mang theo điểm tích luỹ cũ
+4. Chọn **Phòng khám** bệnh nhân sẽ vào
+5. Chọn loại:
    - **Khám mới** — bệnh nhân đến khám lần đầu trong ngày
    - **Trả kết quả** — bệnh nhân quay lại nhận kết quả xét nghiệm/siêu âm
-5. Bấm **Check-in**
+6. Bấm **Check-in (N mã)** để xử lý tất cả cùng lúc
+
+> **Mẹo:** Sau khi check-in xong, bấm **"Xoá xong"** để dọn các mã đã thành công, chỉ giữ lại các mã lỗi cần xử lý lại.
 
 **Cách 2 — Check-in nhanh ngay trên màn hình Xếp hàng** (dành cho điều dưỡng phòng):
 
@@ -189,10 +193,14 @@ Mỗi thẻ bệnh nhân có:
 Hiển thị từng **slot bác sĩ** và bệnh nhân đang được khám.
 
 - Slot có bác sĩ vắng → hiển thị **"Vắng"** (đỏ), không xuất hiện khi mời
+- *(Tùy chọn)* Nhập **thời gian khám** (phút) trước khi bấm xong — dùng để ghi nhận chính xác thời gian thực tế
 - Bấm **✓ Khám xong** khi hoàn tất → bệnh nhân chuyển sang cột Đã xong
 
 #### Cột 3 — Đã khám xong
-Danh sách bệnh nhân đã hoàn tất trong ngày, sắp xếp từ mới nhất.
+Danh sách bệnh nhân đã hoàn tất trong ngày. Mỗi thẻ hiển thị:
+- **Thời gian check-in** — lúc bệnh nhân vào hàng đợi
+- **Thời gian chờ** = lúc được mời vào − lúc check-in
+- **Thời gian khám** = số phút đã nhập (nếu có) hoặc tự tính từ lúc mời vào đến lúc bấm Xong
 
 > **Trên điện thoại:** Ba cột hiển thị dạng **3 tab** — bấm để chuyển giữa Chờ / Đang khám / Xong.
 
@@ -212,11 +220,13 @@ Quản lý các nhóm ưu tiên và điểm P tương ứng.
 #### Tab 2 — Hệ số điểm
 Điều chỉnh các tham số tính điểm:
 
-| Tham số | Ý nghĩa | Gợi ý |
-|---------|---------|-------|
-| **Hệ số T(t)** | Tốc độ tăng điểm theo thời gian. Tăng → người chờ lâu được ưu tiên mạnh hơn | Giữ 0.04 |
-| **Điểm S lỡ lượt** | Điểm bù khi bị bỏ qua thủ công lần 1/2/3 | 20, 40, 60 |
-| **Điểm S tự động** | Điểm bù mỗi lần bị đẩy lùi hạng | 5 |
+| Tham số | Ý nghĩa | Mặc định |
+|---------|---------|---------|
+| **Hệ số T(t)** | Tốc độ tăng điểm theo thời gian chờ. Tăng → người chờ lâu được ưu tiên mạnh hơn | 0.04 |
+| **Điểm S lỡ lượt thủ công** | Điểm bù khi bị bỏ qua thủ công — mảng tăng dần theo lần | 20, 40, 60 |
+| **Điểm S tự động khi bị đẩy lùi** | Điểm bù khi hạng bị tụt trong hàng đợi — mảng tăng dần theo lần | 5, 10, 20 |
+| **Điểm C: cộng mỗi phút chờ** | Nhân với số phút đã chờ thực tế để tính điểm C | 1 |
+| **Điểm C: trừ mỗi phút đến trễ hẹn** | Trừ điểm nếu bệnh nhân đến trễ so với giờ hẹn | 1 |
 
 #### Tab 3 — Phòng khám & Bác sĩ
 Thiết lập phòng khám và danh sách bác sĩ/slot:
@@ -230,14 +240,17 @@ Thiết lập phòng khám và danh sách bác sĩ/slot:
 
 ## 5. Giải thích điểm số
 
-Công thức tính điểm: **Score = P + T(t) + S + F**
+Công thức tính điểm: **Score = P + T(t) + S + C + F**
+
+Điểm được tính **độc lập theo từng phòng khám** — cùng 1 bệnh nhân có thể có thứ hạng khác nhau ở các phòng khác nhau.
 
 | Thành phần | Ý nghĩa |
 |---|---|
 | **P** | Điểm ưu tiên cố định theo đối tượng (Cấp cứu, VIP, Trẻ em...) |
-| **T(t)** | Điểm thời gian chờ: `t + 0.04 × t²` — càng chờ lâu tăng càng nhanh |
-| **S** | Điểm bù khi bị bỏ qua (thủ công: 20/40/60, tự động: 5/lần) |
-| **F** | Điểm thủ công do điều dưỡng/thư ký điều chỉnh |
+| **T(t)** | Điểm thời gian chờ: `t + coeff × t²` — càng chờ lâu tăng càng nhanh |
+| **S** | Điểm bù khi bị bỏ qua — cộng dồn từ 2 nguồn: thủ công (bác sĩ bấm Bỏ qua) và tự động (bị đẩy lùi hạng) |
+| **C** | Điểm check-in: `waitingScorePerMinute × t` − `lateDeductionPerMinute × phút trễ hẹn` |
+| **F** | Điểm thủ công do điều dưỡng điều chỉnh (hoặc điểm ban đầu nhập khi check-in) |
 
 Khi hover vào điểm số của bệnh nhân, sẽ thấy bảng chi tiết:
 
@@ -249,9 +262,10 @@ P (Điểm theo đối tượng):  +130.0
    Cao tuổi 60–69           +10
 T (15ph):                  +23.4    ← Điểm thời gian chờ, tăng mỗi phút
 S (Skip/đẩy lùi):          +20.0    ← Điểm bù vì đã bị bỏ qua 1 lần
+C (Check-in):              +15.0    ← 15 phút × 1 điểm/phút
 F (Thủ công):                +0.0    ← Chưa điều chỉnh
 ─────────────────────────────
-TỔNG:                       173.4
+TỔNG:                       188.4
 ```
 
 > Điểm **P** được liệt kê chi tiết từng danh mục ưu tiên kèm điểm riêng, giúp kiểm tra nhanh bệnh nhân đã được chọn đúng đối tượng chưa.
@@ -259,6 +273,15 @@ TỔNG:                       173.4
 **Điểm càng cao → đứng càng trên trong hàng đợi.**
 
 Hệ thống tự tính lại **mỗi phút** và cập nhật thứ tự tức thì.
+
+### Cơ chế điểm S (bù đẩy lùi)
+
+Điểm S bảo vệ bệnh nhân khỏi bị kẹt cuối hàng mãi mãi:
+
+- **Bỏ qua thủ công** (bác sĩ bấm Bỏ qua): cộng theo mảng, lần 1 → +20, lần 2 → +40, lần 3+ → +60
+- **Đẩy lùi tự động**: khi hạng của bệnh nhân tụt so với các bệnh nhân đã chờ trước (do người khác tăng điểm), cộng theo mảng, lần 1 → +5, lần 2 → +10, lần 3+ → +20
+
+> **Lưu ý:** Bệnh nhân mới check-in dù có điểm cao (điểm ban đầu lớn) cũng **không gây đẩy lùi** cho các bệnh nhân đang chờ — chỉ so sánh thứ hạng giữa các bệnh nhân đã có mặt trong hàng trước đó.
 
 ---
 
@@ -274,7 +297,7 @@ Hệ thống tự tính lại **mỗi phút** và cập nhật thứ tự tức 
 > Mở nhiều tab trình duyệt, mỗi tab chọn một phòng khác nhau. Tất cả đều cập nhật realtime.
 
 **Q: Bệnh nhân khám LS xong, muốn đi xét nghiệm thì làm gì?**
-> Check-in lại với **cùng mã lượt khám**, chọn **Phòng Xét nghiệm**. Bệnh nhân sẽ vào hàng đợi của phòng xét nghiệm với điểm tính từ đầu.
+> Check-in lại với **cùng mã lượt khám**, chọn **Phòng Xét nghiệm**. Nếu muốn mang theo điểm tích luỹ từ phòng LS, nhập **Điểm ban đầu** khi check-in. Nếu để trống, điểm được tính từ đầu theo đối tượng và thời gian chờ.
 
 **Q: Lỡ check-in nhầm phòng thì sao?**
 > Hiện tại cần liên hệ quản lý để can thiệp. Tính năng huỷ check-in đang được phát triển.
@@ -290,3 +313,6 @@ Hệ thống tự tính lại **mỗi phút** và cập nhật thứ tự tức 
 
 **Q: Điện thoại dùng được không?**
 > Được. Truy cập cùng địa chỉ web, giao diện tự điều chỉnh cho màn hình nhỏ. Menu ở nút ☰ góc trái trên.
+
+**Q: Check-in nhiều bệnh nhân cùng lúc được không?**
+> Được. Trên màn hình Check-in, nhấn Enter sau mỗi mã để tự động thêm dòng, hoặc bấm "+ Thêm dòng". Bấm Check-in một lần để xử lý tất cả. Mỗi mã hiển thị kết quả riêng (✓ thành công / lỗi cụ thể).

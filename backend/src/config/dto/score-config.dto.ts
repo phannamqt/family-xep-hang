@@ -22,4 +22,13 @@ export class UpdateScoreConfigDto {
   @IsOptional()
   autoSkipScores?: number[];
 
+  @IsNumber({}, { message: 'Điểm chờ mỗi phút phải là số' })
+  @IsOptional()
+  @Min(0, { message: 'Điểm chờ không được âm' })
+  waitingScorePerMinute?: number;
+
+  @IsNumber({}, { message: 'Điểm trừ đến trễ phải là số' })
+  @IsOptional()
+  @Min(0, { message: 'Điểm trừ không được âm' })
+  lateDeductionPerMinute?: number;
 }

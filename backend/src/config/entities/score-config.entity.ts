@@ -26,15 +26,17 @@ export class ScoreConfig {
   @Column({ type: 'int', array: true, default: () => "'{5,10,20}'" })
   autoSkipScores: number[];
 
-  // Giữ lại các cột cũ để không phá DB (không dùng nữa)
-  @Column({ type: 'int', default: 5, select: false })
-  autoSkipScore: number;
-
-  @Column({ type: 'float', default: 1, select: false })
+  // C: điểm cộng mỗi phút chờ thực tế
+  @Column({ type: 'float', default: 1 })
   waitingScorePerMinute: number;
 
-  @Column({ type: 'float', default: 1, select: false })
+  // C: điểm trừ nếu đến trễ hẹn (mỗi phút trễ)
+  @Column({ type: 'float', default: 1 })
   lateDeductionPerMinute: number;
+
+  // Giữ lại cột cũ để không phá DB (không dùng nữa)
+  @Column({ type: 'int', default: 5, select: false })
+  autoSkipScore: number;
 
   @UpdateDateColumn()
   updatedAt: Date;
