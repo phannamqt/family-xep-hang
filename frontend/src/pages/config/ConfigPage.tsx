@@ -357,10 +357,10 @@ function RoomsTab() {
   const isPending = createRoomMut.isPending || updateRoomMut.isPending;
 
   return (
-    <div className="flex gap-6">
+    <div className="flex gap-6 h-[calc(100vh-180px)] overflow-hidden">
       {/* Room list + create/edit form */}
-      <div className="w-72">
-        <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+      <div className="w-72 flex flex-col overflow-hidden">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4 shrink-0">
           <h3 className="font-semibold text-gray-700 mb-3">
             {editRoomId ? 'Sửa phòng khám' : 'Thêm phòng khám'}
           </h3>
@@ -396,7 +396,7 @@ function RoomsTab() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-y-auto flex-1">
           {rooms.map(r => (
             <div key={r.id}
               className={`border-b border-gray-100 text-sm ${selectedRoom?.id === r.id ? 'bg-blue-50' : 'hover:bg-gray-50'} ${editRoomId === r.id ? 'ring-2 ring-inset ring-blue-400' : ''}`}>
@@ -416,7 +416,7 @@ function RoomsTab() {
 
       {/* Slots config */}
       {room && (
-        <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4 overflow-y-auto">
           <div className={`flex items-center justify-between mb-4 ${(room.slots?.length ?? 0) === 0 ? 'p-3 bg-blue-50 border border-blue-200 rounded-lg' : ''}`}>
             <div>
               <h3 className="font-semibold text-gray-700">{room.name} — Cấu hình slot bác sĩ</h3>
