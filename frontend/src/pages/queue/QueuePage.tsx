@@ -294,7 +294,7 @@ function WaitingCard({ entry, rank, fairnessValue, onFairnessChange, onFairnessS
         </div>
       </div>
 
-      {/* queuedAt + Fairness + actions */}
+      {/* queuedAt + Fairness */}
       <div className="flex items-center gap-2 mt-2">
         <div className="flex items-center gap-1">
           <span className="text-xs text-gray-400">Chờ từ:</span>
@@ -308,7 +308,7 @@ function WaitingCard({ entry, rank, fairnessValue, onFairnessChange, onFairnessS
           />
         </div>
         <div className="flex items-center gap-1">
-          <span className="text-xs text-gray-400">F:</span>
+          <span className="text-xs text-gray-400">F <span className="text-gray-300">(ưu tiên thủ công)</span>:</span>
           <input
             type="number"
             className="w-14 px-1.5 py-0.5 border border-gray-300 rounded text-xs text-center"
@@ -318,12 +318,15 @@ function WaitingCard({ entry, rank, fairnessValue, onFairnessChange, onFairnessS
             onKeyDown={e => e.key === 'Enter' && onFairnessSave()}
           />
         </div>
+      </div>
+      {/* Actions */}
+      <div className="flex gap-2 mt-2">
         <button onClick={onSkip}
-          className="px-2 py-1 text-xs border border-orange-300 text-orange-600 rounded hover:bg-orange-50">
+          className="flex-1 py-1.5 text-xs border border-orange-300 text-orange-600 rounded hover:bg-orange-50">
           Bỏ qua
         </button>
         <button onClick={onInvite}
-          className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
+          className="flex-1 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
           Mời vào ►
         </button>
       </div>

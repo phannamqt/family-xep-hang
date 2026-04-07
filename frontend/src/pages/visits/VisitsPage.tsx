@@ -50,6 +50,7 @@ export default function VisitsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['visits'] });
       setEditVisit(null);
+      setShowForm(false);
       toast.success('Đã cập nhật lượt khám');
     },
     onError: (e: unknown) => toast.error(extractErrorMessage(e, 'Cập nhật lượt khám thất bại')),
@@ -84,12 +85,13 @@ export default function VisitsPage() {
   };
 
   const handleSubmit = () => {
-    const payload: any = { ...form };
-    if (!payload.appointmentTime) delete payload.appointmentTime;
-
     if (editVisit) {
+      const payload: any = { categoryIds: form.categoryIds };
+      if (form.appointmentTime) payload.appointmentTime = form.appointmentTime;
       updateMut.mutate({ id: editVisit.id, data: payload });
     } else {
+      const payload: any = { ...form };
+      if (!payload.appointmentTime) delete payload.appointmentTime;
       createMut.mutate(payload);
     }
   };
@@ -228,7 +230,7 @@ export default function VisitsPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Mã lượt</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600 w-36">Mã lượt</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Bệnh nhân</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Đối tượng</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Check-in</th>
@@ -239,7 +241,7 @@ export default function VisitsPage() {
             {visits.map(v => (
               <tr key={v.id} className="border-b border-gray-100 hover:bg-gray-50">
                 <td className="px-4 py-3">
-                  <div className="font-mono font-bold text-blue-700 text-xs">{v.visitCode}</div>
+                  <div className="font-mono font-bold text-blue-700 text-xs whitespace-nowrap">{v.visitCode}</div>
                   <CopyButton text={v.visitCode} className="text-xs" />
                 </td>
                 <td className="px-4 py-3 font-medium text-gray-800">{v.patient?.fullName}</td>
