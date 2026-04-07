@@ -326,28 +326,43 @@ function RoomsTab() {
       {/* Slots config */}
       {room && (
         <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-700">{room.name} — Cấu hình slot bác sĩ</h3>
+          <div className={`flex items-center justify-between mb-4 ${(room.slots?.length ?? 0) === 0 ? 'p-3 bg-blue-50 border border-blue-200 rounded-lg' : ''}`}>
+            <div>
+              <h3 className="font-semibold text-gray-700">{room.name} — Cấu hình slot bác sĩ</h3>
+              {(room.slots?.length ?? 0) === 0 && (
+                <p className="text-xs text-blue-600 mt-0.5">Nhập số slot rồi bấm Áp dụng để tạo slot bác sĩ</p>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <label className="text-sm text-gray-500">Số slot:</label>
-              <input type="number" min={1} max={10} className="w-16 px-2 py-1 border border-gray-300 rounded text-sm"
+              <input type="number" min={1} max={10}
+                className={`w-16 px-2 py-1 border rounded text-sm ${(room.slots?.length ?? 0) === 0 ? 'border-blue-400 ring-2 ring-blue-200' : 'border-gray-300'}`}
                 value={slotCount} onChange={e => setSlotCount(+e.target.value)} />
               <button onClick={() => upsertSlotsMut.mutate({ id: room.id, count: slotCount })}
-                className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+                className={`px-3 py-1 text-white rounded text-sm ${(room.slots?.length ?? 0) === 0 ? 'bg-blue-600 hover:bg-blue-700 font-semibold shadow-sm' : 'bg-blue-600 hover:bg-blue-700'}`}>
                 Áp dụng
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            {[...(room.slots ?? [])].sort((a, b) => a.slotNumber - b.slotNumber).map(slot => (
-              <SlotCard
-                key={slot.id}
-                slot={slot}
-                onUpdate={(slotId, data) => updateSlotMut.mutate({ roomId: room.id, slotId, data })}
-              />
-            ))}
-          </div>
+          {(room.slots?.length ?? 0) === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-gray-200 rounded-lg">
+              <div className="text-4xl mb-3">🪑</div>
+              <div className="text-gray-500 font-medium">Phòng chưa có slot bác sĩ</div>
+              <div className="text-gray-400 text-sm mt-1">Mỗi slot = 1 bác sĩ có thể khám đồng thời</div>
+              <div className="text-gray-400 text-sm">Ví dụ: 3 bác sĩ → nhập 3 và bấm <span className="font-medium text-blue-600">Áp dụng</span></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {[...(room.slots ?? [])].sort((a, b) => a.slotNumber - b.slotNumber).map(slot => (
+                <SlotCard
+                  key={slot.id}
+                  slot={slot}
+                  onUpdate={(slotId, data) => updateSlotMut.mutate({ roomId: room.id, slotId, data })}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
