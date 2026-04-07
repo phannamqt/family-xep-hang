@@ -166,6 +166,7 @@ export default function PatientsPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
+              <th className="text-center px-3 py-3 font-medium text-gray-600 w-10">STT</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Họ tên</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Tuổi / Giới</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">SĐT</th>
@@ -174,8 +175,9 @@ export default function PatientsPage() {
             </tr>
           </thead>
           <tbody>
-            {patients.map(p => (
+            {patients.map((p, idx) => (
               <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="px-3 py-3 text-center text-xs text-gray-400 font-medium">{idx + 1}</td>
                 <td className="px-4 py-3 font-medium text-gray-800">{p.fullName}</td>
                 <td className="px-4 py-3 text-gray-600">
                   {p.dateOfBirth ? `${calcAge(p.dateOfBirth)} tuổi` : '—'} · {p.gender === 'male' ? 'Nam' : p.gender === 'female' ? 'Nữ' : 'Khác'}
@@ -189,7 +191,7 @@ export default function PatientsPage() {
               </tr>
             ))}
             {patients.length === 0 && (
-              <tr><td colSpan={5} className="text-center py-8 text-gray-400">Không có bệnh nhân nào</td></tr>
+              <tr><td colSpan={6} className="text-center py-8 text-gray-400">Không có bệnh nhân nào</td></tr>
             )}
           </tbody>
         </table>

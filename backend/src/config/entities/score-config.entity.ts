@@ -22,16 +22,18 @@ export class ScoreConfig {
   @Column({ type: 'int', array: true, default: () => "'{20,40,60}'" })
   skipScores: number[]; // [20, 40, 60]
 
-  // Điểm S cộng khi bị đẩy lùi tự động (Case 2)
-  @Column({ type: 'int', default: 5 })
+  // Điểm S cộng dồn khi bị đẩy lùi tự động (tăng dần như skipScores)
+  @Column({ type: 'int', array: true, default: () => "'{5,10,20}'" })
+  autoSkipScores: number[];
+
+  // Giữ lại các cột cũ để không phá DB (không dùng nữa)
+  @Column({ type: 'int', default: 5, select: false })
   autoSkipScore: number;
 
-  // C: điểm cộng mỗi phút chờ thực tế
-  @Column({ type: 'float', default: 1 })
+  @Column({ type: 'float', default: 1, select: false })
   waitingScorePerMinute: number;
 
-  // C: điểm trừ nếu đến trễ hẹn (mỗi phút trễ)
-  @Column({ type: 'float', default: 1 })
+  @Column({ type: 'float', default: 1, select: false })
   lateDeductionPerMinute: number;
 
   @UpdateDateColumn()

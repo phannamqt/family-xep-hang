@@ -6,6 +6,7 @@ import {
   IsEnum,
   IsArray,
   ArrayMinSize,
+  IsNumber,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { CheckInType } from '../entities/visit.entity';
@@ -57,4 +58,8 @@ export class CheckInDto {
 
   @IsUUID('all', { message: 'ID phòng khám không hợp lệ' })
   roomId: string;
+
+  @IsNumber({}, { message: 'Điểm ban đầu phải là số' })
+  @IsOptional()
+  initialScore?: number;
 }

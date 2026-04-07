@@ -79,7 +79,11 @@ export class QueueEntry {
   scoreF: number; // Fairness (thủ công)
 
   @Column({ type: 'float', default: 0 })
-  totalScore: number; // P + T + S + C + F
+  totalScore: number; // P + T + S + F
+
+  // Thời gian khám (phút) — nhập tay hoặc tính từ finishedAt - startedAt
+  @Column({ type: 'int', nullable: true })
+  examinationMinutes: number | null;
 
   // ===== Tracking =====
   @Column({ type: 'int', default: 0 })

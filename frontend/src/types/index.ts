@@ -12,7 +12,7 @@ export interface ScoreConfig {
   id: string;
   timeCoefficient: number;
   skipScores: number[];
-  autoSkipScore: number;
+  autoSkipScores: number[];
 }
 
 // ===== Rooms =====
@@ -93,5 +93,6 @@ export interface QueueEntry {
   queuedAt: string;
   startedAt?: string;
   finishedAt?: string;
+  examinationMinutes?: number | null;
   scoreBreakdown?: ScoreBreakdown;
 }

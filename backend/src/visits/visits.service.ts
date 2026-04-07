@@ -146,7 +146,7 @@ export class VisitsService {
     const scoreP = categories.reduce((sum, c) => sum + c.scoreP, 0);
 
     // Tạo QueueEntry cho phòng này (cho phép cùng visit vào nhiều phòng)
-    await this.queueService.addToQueue(visit, scoreP, dto.roomId, dto.type);
+    await this.queueService.addToQueue(visit, scoreP, dto.roomId, dto.type, dto.initialScore ?? 0);
     await this.queueGateway.emitQueueUpdate(dto.roomId, visit.visitDate);
 
     const [enriched] = await this.attachCategories([visit]);

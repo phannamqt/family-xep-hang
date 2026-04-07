@@ -391,9 +391,11 @@ function InRoomColumn({ entries, room }: {
   room?: ClinicRoom;
 }) {
   const qc = useQueryClient();
+  const [examMinutes, setExamMinutes] = useState<Record<string, string>>({});
 
   const doneMut = useMutation({
-    mutationFn: (id: string) => queueApi.markDone(id),
+    mutationFn: ({ id, minutes }: { id: string; minutes?: number }) =>
+      queueApi.markDone(id, minutes),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['queue'] });
       toast.success('Đã hoàn tất khám');
@@ -431,9 +433,25 @@ function InRoomColumn({ entries, room }: {
                   <div className="text-xs text-gray-400">
                     Vào lúc: {patient.startedAt ? new Date(patient.startedAt).toLocaleTimeString('vi-VN') : '—'}
                   </div>
+                  <div className="flex items-center gap-1 mt-2">
+                    <span className="text-xs text-gray-400 whitespace-nowrap">Thời gian khám:</span>
+                    <input
+                      type="number"
+                      min={1}
+                      placeholder="phút"
+                      className="w-16 px-1.5 py-1 border border-gray-300 rounded text-xs text-center"
+                      value={examMinutes[patient.id] ?? ''}
+                      onChange={e => setExamMinutes(m => ({ ...m, [patient.id]: e.target.value }))}
+                    />
+                    <span className="text-xs text-gray-400">phút</span>
+                  </div>
                   <button
-                    onClick={() => doneMut.mutate(patient.id)}
-                    className="mt-2 w-full py-1.5 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                    onClick={() => {
+                      const mins = parseInt(examMinutes[patient.id] ?? '');
+                      doneMut.mutate({ id: patient.id, minutes: isNaN(mins) ? undefined : mins });
+                    }}
+                    disabled={doneMut.isPending}
+                    className="mt-2 w-full py-1.5 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50"
                   >
                     ✓ Khám xong
                   </button>
@@ -462,15 +480,34 @@ function DoneColumn({ entries }: { entries: QueueEntry[] }) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
-        {entries.map(entry => (
-          <div key={entry.id} className="bg-white rounded-lg border border-gray-200 p-3">
-            <div className="font-medium text-sm text-gray-700">{entry.visit?.patient?.fullName}</div>
-            <div className="text-xs text-gray-400">{(entry.visit?.categories ?? []).map(c => c.name).join(', ') || '—'}</div>
-            <div className="text-xs text-gray-400 mt-0.5">
-              Xong lúc: {entry.finishedAt ? new Date(entry.finishedAt).toLocaleTimeString('vi-VN') : '—'}
+        {entries.map(entry => {
+          const checkinTime = entry.queuedAt ? new Date(entry.queuedAt) : null;
+          const startTime = entry.startedAt ? new Date(entry.startedAt) : null;
+          const finishTime = entry.finishedAt ? new Date(entry.finishedAt) : null;
+
+          const waitMinutes = checkinTime && startTime
+            ? Math.round((startTime.getTime() - checkinTime.getTime()) / 60000)
+            : null;
+
+          const examMinutes = entry.examinationMinutes != null
+            ? entry.examinationMinutes
+            : (startTime && finishTime
+              ? Math.round((finishTime.getTime() - startTime.getTime()) / 60000)
+              : null);
+
+          return (
+            <div key={entry.id} className="bg-white rounded-lg border border-gray-200 p-3">
+              <div className="font-medium text-sm text-gray-700">{entry.visit?.patient?.fullName}</div>
+              <div className="text-xs text-gray-400">{(entry.visit?.categories ?? []).map(c => c.name).join(', ') || '—'}</div>
+              <div className="text-xs text-gray-400 mt-1 space-y-0.5">
+                <div>Check-in: {checkinTime ? checkinTime.toLocaleTimeString('vi-VN') : '—'}</div>
+                <div>Chờ: {waitMinutes != null ? `${waitMinutes} phút` : '—'}</div>
+                <div>Khám: {examMinutes != null ? `${examMinutes} phút` : '—'}</div>
+                <div className="text-gray-300">Xong lúc: {finishTime ? finishTime.toLocaleTimeString('vi-VN') : '—'}</div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         {entries.length === 0 && (
           <div className="text-center py-8 text-gray-400 text-sm">Chưa có bệnh nhân nào hoàn tất</div>
         )}

@@ -37,6 +37,7 @@ export class QueueService {
     scoreP: number = 0,
     roomId: string,
     checkInType: CheckInType,
+    initialScore: number = 0,
   ): Promise<QueueEntry> {
     const existing = await this.entryRepo.findOne({
       where: {
@@ -58,8 +59,8 @@ export class QueueService {
       scoreT: 0,
       scoreS: 0,
       scoreC: 0,
-      scoreF: 0,
-      totalScore: scoreP,
+      scoreF: initialScore,
+      totalScore: scoreP + initialScore,
       queuedAt: new Date(),
     });
 
@@ -138,9 +139,10 @@ export class QueueService {
         const oldRank = oldRanks.get(entry.id) ?? newRank;
 
         if (newRank > oldRank) {
-          entry.scoreS += config.autoSkipScore;
+          const addedS = this.scoreService.getSkipScore(entry.autoSkipCount + 1, config.autoSkipScores);
+          entry.scoreS += addedS;
           entry.autoSkipCount += 1;
-          entry.totalScore += config.autoSkipScore;
+          entry.totalScore += addedS;
         }
 
         entry.previousRank = oldRank;
@@ -172,7 +174,7 @@ export class QueueService {
   }
 
   // ===== Bác sĩ bấm Xong =====
-  async markDone(entryId: string): Promise<QueueEntry> {
+  async markDone(entryId: string, examinationMinutes?: number): Promise<QueueEntry> {
     const entry = await this.entryRepo.findOne({
       where: { id: entryId, status: QueueStatus.IN_ROOM },
       relations: ['visit'],
@@ -183,6 +185,9 @@ export class QueueService {
     entry.status = QueueStatus.DONE;
     entry.finishedAt = new Date();
     entry.slotId = null;
+    if (examinationMinutes != null && examinationMinutes > 0) {
+      entry.examinationMinutes = examinationMinutes;
+    }
     const saved = await this.entryRepo.save(entry);
 
     // Trigger tính lại queue

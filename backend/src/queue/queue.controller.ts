@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { QueueService } from './queue.service';
 import { QueueGateway } from './queue.gateway';
-import { InviteToRoomDto, UpdateFairnessDto, UpdateQueuedAtDto } from './dto/queue.dto';
+import { InviteToRoomDto, UpdateFairnessDto, UpdateQueuedAtDto, MarkDoneDto } from './dto/queue.dto';
 import { format } from 'date-fns';
 
 @Controller('queue')
@@ -39,8 +39,8 @@ export class QueueController {
 
   // POST /queue/:id/done — Bác sĩ bấm Xong
   @Post(':id/done')
-  async markDone(@Param('id') id: string) {
-    const entry = await this.queueService.markDone(id);
+  async markDone(@Param('id') id: string, @Body() dto: MarkDoneDto) {
+    const entry = await this.queueService.markDone(id, dto?.examinationMinutes);
     const date = entry.visit?.visitDate ?? format(new Date(), 'yyyy-MM-dd');
     await this.queueGateway.emitQueueUpdate(entry.roomId ?? '', date);
     return entry;

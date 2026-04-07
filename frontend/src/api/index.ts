@@ -47,8 +47,8 @@ export const visitsApi = {
   update: (id: string, data: any) => api.patch(`/visits/${id}`, data).then(r => r.data),
   updateCategories: (id: string, categoryIds: string[]) =>
     api.patch(`/visits/${id}/categories`, { categoryIds }).then(r => r.data),
-  checkIn: (visitCode: string, type: 'new' | 'result', roomId: string) =>
-    api.post('/visits/checkin', { visitCode, type, roomId }).then(r => r.data),
+  checkIn: (visitCode: string, type: 'new' | 'result', roomId: string, initialScore?: number) =>
+    api.post('/visits/checkin', { visitCode, type, roomId, initialScore }).then(r => r.data),
 };
 
 // ===== Queue APIs =====
@@ -57,7 +57,8 @@ export const queueApi = {
     api.get('/queue', { params: { roomId, date } }).then(r => r.data),
   invite: (queueEntryId: string, slotId: string) =>
     api.post('/queue/invite', { queueEntryId, slotId }).then(r => r.data),
-  markDone: (entryId: string) => api.post(`/queue/${entryId}/done`).then(r => r.data),
+  markDone: (entryId: string, examinationMinutes?: number) =>
+    api.post(`/queue/${entryId}/done`, { examinationMinutes }).then(r => r.data),
   skip: (entryId: string) => api.post(`/queue/${entryId}/skip`).then(r => r.data),
   updateFairness: (queueEntryId: string, scoreF: number) =>
     api.patch('/queue/fairness', { queueEntryId, scoreF }).then(r => r.data),

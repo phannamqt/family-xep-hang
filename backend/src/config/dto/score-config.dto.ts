@@ -18,9 +18,8 @@ export class UpdateScoreConfigDto {
   @ArrayMinSize(1, { message: 'Phải có ít nhất 1 mức điểm lỡ lượt' })
   skipScores?: number[];
 
-  @IsInt({ message: 'Điểm đẩy lùi tự động phải là số nguyên' })
+  @IsArray({ message: 'Điểm đẩy lùi tự động phải là mảng số' })
   @IsOptional()
-  @Min(0, { message: 'Điểm đẩy lùi không được âm' })
-  autoSkipScore?: number;
+  autoSkipScores?: number[];
 
 }

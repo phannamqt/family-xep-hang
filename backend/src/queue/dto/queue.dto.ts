@@ -1,4 +1,4 @@
-import { IsUUID, IsString, IsNumber, IsOptional, IsDateString } from 'class-validator';
+import { IsUUID, IsString, IsNumber, IsOptional, IsDateString, IsInt, Min } from 'class-validator';
 
 export class InviteToRoomDto {
   @IsUUID('all', { message: 'ID lượt xếp hàng không hợp lệ' })
@@ -22,6 +22,13 @@ export class UpdateQueuedAtDto {
 
   @IsDateString({}, { message: 'Thời gian không đúng định dạng ISO 8601' })
   queuedAt: string;
+}
+
+export class MarkDoneDto {
+  @IsInt({ message: 'Thời gian khám phải là số nguyên' })
+  @Min(1, { message: 'Thời gian khám phải lớn hơn 0' })
+  @IsOptional()
+  examinationMinutes?: number;
 }
 
 export class GetQueueDto {
