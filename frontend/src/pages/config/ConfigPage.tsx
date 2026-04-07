@@ -224,11 +224,15 @@ function ScoreConfigTab() {
           <p className="text-xs text-gray-400 mt-1">Ví dụ: 20, 40, 60 → lần 1 +20, lần 2 +40, lần 3+ +60</p>
         </div>
         <div>
-          <label className="text-sm text-gray-600">Điểm S tự động khi bị đẩy lùi (Case 2)</label>
-          <input type="number" className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
-            value={val.autoSkipScore ?? 5}
-            onChange={e => setForm(f => ({ ...f, autoSkipScore: +e.target.value }))}
+          <label className="text-sm text-gray-600">Điểm S tự động khi bị đẩy lùi (cách nhau bằng dấu phẩy)</label>
+          <input className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+            value={(val.autoSkipScores ?? [5, 10, 20]).join(', ')}
+            onChange={e => setForm(f => ({
+              ...f,
+              autoSkipScores: e.target.value.split(',').map(s => +s.trim()).filter(n => !isNaN(n))
+            }))}
           />
+          <p className="text-xs text-gray-400 mt-1">Ví dụ: 5, 10, 20 → lần 1 +5, lần 2 +10, lần 3+ +20</p>
         </div>
 <button
           onClick={() => updateMut.mutate(form)}
