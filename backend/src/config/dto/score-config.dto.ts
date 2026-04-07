@@ -1,6 +1,7 @@
 import {
   IsNumber,
   IsArray,
+  IsBoolean,
   IsInt,
   IsOptional,
   Min,
@@ -31,4 +32,8 @@ export class UpdateScoreConfigDto {
   @IsOptional()
   @Min(0, { message: 'Điểm trừ không được âm' })
   lateDeductionPerMinute?: number;
+
+  @IsBoolean()
+  @IsOptional()
+  pushbackPerStep?: boolean;
 }

@@ -234,6 +234,19 @@ function ScoreConfigTab() {
           />
           <p className="text-xs text-gray-400 mt-1">Ví dụ: 5, 10, 20 → lần 1 +5, lần 2 +10, lần 3+ +20</p>
         </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="text-sm text-gray-600">Tính điểm đẩy lùi theo từng bậc</label>
+            <p className="text-xs text-gray-400">Bật: tụt 3 bậc = 3 lần đẩy lùi &nbsp;|&nbsp; Tắt: tụt bao nhiêu cũng chỉ 1 lần</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setForm(f => ({ ...f, pushbackPerStep: !(f.pushbackPerStep ?? val.pushbackPerStep ?? true) }))}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${(form.pushbackPerStep ?? val.pushbackPerStep ?? true) ? 'bg-blue-600' : 'bg-gray-300'}`}
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${(form.pushbackPerStep ?? val.pushbackPerStep ?? true) ? 'translate-x-6' : 'translate-x-1'}`} />
+          </button>
+        </div>
         <div>
           <label className="text-sm text-gray-600">Điểm C: cộng mỗi phút chờ thực tế</label>
           <input type="number" step="0.1" className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"

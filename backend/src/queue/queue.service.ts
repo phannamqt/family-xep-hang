@@ -121,11 +121,11 @@ export class QueueService {
     const existingEntries = waitingEntries.filter(e => e.currentRank != null);
     const newEntries = waitingEntries.filter(e => e.currentRank == null);
 
-    // Lưu rank cũ CHỈ trong nhóm các entry đã tồn tại (so sánh nội bộ)
+    // Lưu rank cũ từ currentRank đã lưu trong DB (phản ánh thứ tự TRƯỚC sự kiện này)
+    // Không sort lại từ điểm hiện tại vì điểm có thể đã bị thay đổi (updateFairness...)
+    // trước khi recalculateQueue được gọi.
     const oldRanks = new Map<string, number>();
-    [...existingEntries]
-      .sort((a, b) => b.totalScore - a.totalScore)
-      .forEach((e, idx) => oldRanks.set(e.id, idx + 1));
+    existingEntries.forEach(e => oldRanks.set(e.id, e.currentRank!));
 
     // Tính lại score cho tất cả entry (Score = P + T(t) + S + F)
     for (const entry of waitingEntries) {
@@ -144,21 +144,18 @@ export class QueueService {
       const newRankAmongExisting = new Map<string, number>();
       existingAfter.forEach((e, idx) => newRankAmongExisting.set(e.id, idx + 1));
 
-      for (let i = 0; i < waitingEntries.length; i++) {
-        const entry = waitingEntries[i];
-        entry.currentRank = i + 1;
-
+      for (const entry of waitingEntries) {
         if (newEntries.includes(entry)) {
-          // Entry mới: chỉ set rank, không detect pushback
-          entry.previousRank = i + 1;
+          // Entry mới: chỉ set previousRank tạm, currentRank sẽ set sau re-sort
+          entry.previousRank = entry.currentRank ?? 999;
           continue;
         }
 
         const oldRank = oldRanks.get(entry.id) ?? 1;
         const newRank = newRankAmongExisting.get(entry.id) ?? 1;
 
-        if (newRank > oldRank) {
-          // Bị đẩy lùi so với các entry đã tồn tại khác
+        const pushbackCount = config.pushbackPerStep ? newRank - oldRank : 1;
+        for (let p = 0; p < pushbackCount; p++) {
           const addedS = this.scoreService.getSkipScore(entry.autoSkipCount + 1, config.autoSkipScores);
           entry.scoreS += addedS;
           entry.autoSkipCount += 1;
@@ -167,6 +164,10 @@ export class QueueService {
 
         entry.previousRank = oldRank;
       }
+
+      // Re-sort sau khi áp pushback để currentRank phản ánh đúng vị trí cuối cùng
+      waitingEntries.sort((a, b) => b.totalScore - a.totalScore);
+      waitingEntries.forEach((e, idx) => { e.currentRank = idx + 1; });
     } else {
       waitingEntries.forEach((e, idx) => {
         e.currentRank = idx + 1;

@@ -15,6 +15,7 @@ export interface ScoreConfig {
   autoSkipScores: number[];
   waitingScorePerMinute: number;
   lateDeductionPerMinute: number;
+  pushbackPerStep: boolean;
 }
 
 // ===== Rooms =====

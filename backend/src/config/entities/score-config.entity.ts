@@ -26,6 +26,10 @@ export class ScoreConfig {
   @Column({ type: 'int', array: true, default: () => "'{5,10,20}'" })
   autoSkipScores: number[];
 
+  // true: tụt N bậc = N lần đẩy lùi | false: luôn chỉ 1 lần dù tụt bao nhiêu bậc
+  @Column({ type: 'boolean', default: true })
+  pushbackPerStep: boolean;
+
   // C: điểm cộng mỗi phút chờ thực tế
   @Column({ type: 'float', default: 1 })
   waitingScorePerMinute: number;
