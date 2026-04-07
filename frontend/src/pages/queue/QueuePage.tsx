@@ -254,8 +254,18 @@ function WaitingCard({ entry, rank, fairnessValue, onFairnessChange, onFairnessS
             {entry.visit?.patient?.fullName}
             {entry.visit?.patient?.patientCode && <span className="ml-1.5 text-xs text-blue-400 font-mono font-normal">#{entry.visit.patient.patientCode}</span>}
           </div>
-          <div className="text-xs text-gray-400 mt-0.5">
-            {(entry.visit?.categories ?? []).map(c => c.name).join(', ') || '—'} · {waitMin} phút chờ
+          <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-2 flex-wrap">
+            <span>{(entry.visit?.categories ?? []).map(c => c.name).join(', ') || '—'} · {waitMin} phút chờ</span>
+            {entry.autoSkipCount > 0 && (
+              <span className="inline-flex items-center gap-0.5 bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded text-xs font-medium">
+                ↓{entry.autoSkipCount} lùi
+              </span>
+            )}
+            {entry.skipCount > 0 && (
+              <span className="inline-flex items-center gap-0.5 bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded text-xs font-medium">
+                ✕{entry.skipCount} bỏ qua
+              </span>
+            )}
           </div>
         </div>
 
