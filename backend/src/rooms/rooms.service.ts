@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not } from 'typeorm';
 import { ClinicRoom } from './entities/clinic-room.entity';
 import { DoctorSlot } from './entities/doctor-slot.entity';
 import { CreateClinicRoomDto, UpdateClinicRoomDto } from './dto/clinic-room.dto';
@@ -35,20 +35,28 @@ export class RoomsService {
     return room;
   }
 
-  createRoom(dto: CreateClinicRoomDto) {
+  async createRoom(dto: CreateClinicRoomDto) {
+    const existing = await this.roomRepo.findOne({ where: { name: dto.name, isActive: true } });
+    if (existing) throw new ConflictException(`Phòng khám "${dto.name}" đã tồn tại`);
     const room = this.roomRepo.create(dto);
     return this.roomRepo.save(room);
   }
 
   async updateRoom(id: string, dto: UpdateClinicRoomDto) {
     const room = await this.findOne(id);
+    if (dto.name && dto.name !== room.name) {
+      const existing = await this.roomRepo.findOne({ where: { name: dto.name, isActive: true, id: Not(id) } });
+      if (existing) throw new ConflictException(`Phòng khám "${dto.name}" đã tồn tại`);
+    }
     Object.assign(room, dto);
     return this.roomRepo.save(room);
   }
 
   async removeRoom(id: string) {
     const room = await this.findOne(id);
-    return this.roomRepo.remove(room);
+    // Soft delete: đánh dấu isActive = false thay vì xoá hẳn để giữ lịch sử queue
+    room.isActive = false;
+    return this.roomRepo.save(room);
   }
 
   // ===== Slots =====

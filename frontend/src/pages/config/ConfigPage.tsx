@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { configApi, roomsApi } from '../../api';
 import type { PriorityCategory, ScoreConfig, ClinicRoom, DoctorSlot } from '../../types';
@@ -44,8 +44,10 @@ function CategoriesTab() {
     queryKey: ['categories'],
     queryFn: configApi.getCategories,
   });
-  const [form, setForm] = useState({ name: '', description: '', scoreP: 0, sortOrder: 0 });
+  const emptyForm = { name: '', description: '', scoreP: 0, sortOrder: 0 };
+  const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState<string | null>(null);
+  const [nameError, setNameError] = useState('');
 
   const createMut = useMutation({
     mutationFn: (data: any) => editId
@@ -53,12 +55,19 @@ function CategoriesTab() {
       : configApi.createCategory(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['categories'] });
-      setForm({ name: '', description: '', scoreP: 0, sortOrder: 0 });
+      setForm(emptyForm);
+      setNameError('');
       toast.success(editId ? 'Đã cập nhật đối tượng' : 'Đã thêm đối tượng mới');
       setEditId(null);
     },
     onError: (e: unknown) => toast.error(extractErrorMessage(e, 'Lưu đối tượng thất bại')),
   });
+
+  const handleSubmit = () => {
+    if (!form.name.trim()) { setNameError('Tên đối tượng không được để trống'); return; }
+    setNameError('');
+    createMut.mutate(form);
+  };
 
   const deleteMut = useMutation({
     mutationFn: configApi.deleteCategory,
@@ -83,12 +92,13 @@ function CategoriesTab() {
         </h3>
         <div className="space-y-3">
           <div>
-            <label className="text-xs text-gray-500">Tên đối tượng</label>
+            <label className="text-xs text-gray-500">Tên đối tượng *</label>
             <input
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+              className={`w-full mt-1 px-3 py-2 border rounded-md text-sm ${nameError ? 'border-red-400' : 'border-gray-300'}`}
               value={form.name}
-              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              onChange={e => { setForm(f => ({ ...f, name: e.target.value })); if (e.target.value.trim()) setNameError(''); }}
             />
+            {nameError && <p className="text-xs text-red-500 mt-1">{nameError}</p>}
           </div>
           <div>
             <label className="text-xs text-gray-500">Mô tả</label>
@@ -118,14 +128,15 @@ function CategoriesTab() {
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => createMut.mutate(form)}
-              className="flex-1 bg-blue-600 text-white py-2 rounded-md text-sm hover:bg-blue-700"
+              onClick={handleSubmit}
+              disabled={createMut.isPending}
+              className="flex-1 bg-blue-600 text-white py-2 rounded-md text-sm hover:bg-blue-700 disabled:opacity-40"
             >
-              {editId ? 'Cập nhật' : 'Thêm'}
+              {createMut.isPending ? 'Đang lưu...' : (editId ? 'Cập nhật' : 'Thêm')}
             </button>
             {editId && (
               <button
-                onClick={() => { setEditId(null); setForm({ name: '', description: '', scoreP: 0, sortOrder: 0 }); }}
+                onClick={() => { setEditId(null); setForm(emptyForm); setNameError(''); }}
                 className="px-3 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50"
               >
                 Huỷ
@@ -251,7 +262,10 @@ function RoomsTab() {
     queryKey: ['rooms'],
     queryFn: roomsApi.getAll,
   });
-  const [form, setForm] = useState({ name: '', description: '', type: 'examination' as const });
+  const emptyForm = { name: '', description: '', type: 'examination' as const };
+  const [form, setForm] = useState(emptyForm);
+  const [editRoomId, setEditRoomId] = useState<string | null>(null);
+  const [nameError, setNameError] = useState('');
   const [selectedRoom, setSelectedRoom] = useState<ClinicRoom | null>(null);
   const [slotCount, setSlotCount] = useState(5);
 
@@ -259,10 +273,32 @@ function RoomsTab() {
     mutationFn: roomsApi.create,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['rooms'] });
-      setForm({ name: '', description: '', type: 'examination' });
+      setForm(emptyForm);
       toast.success('Đã thêm phòng khám');
     },
     onError: (e: unknown) => toast.error(extractErrorMessage(e, 'Thêm phòng khám thất bại')),
+  });
+
+  const updateRoomMut = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => roomsApi.update(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['rooms'] });
+      setForm(emptyForm);
+      setEditRoomId(null);
+      toast.success('Đã cập nhật phòng khám');
+    },
+    onError: (e: unknown) => toast.error(extractErrorMessage(e, 'Cập nhật phòng khám thất bại')),
+  });
+
+  const deleteRoomMut = useMutation({
+    mutationFn: (id: string) => roomsApi.delete(id),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ['rooms'] });
+      if (selectedRoom?.id === id) setSelectedRoom(null);
+      if (editRoomId === id) cancelEditRoom();
+      toast.success('Đã xoá phòng khám');
+    },
+    onError: (e: unknown) => toast.error(extractErrorMessage(e, 'Xoá phòng khám thất bại')),
   });
 
   const upsertSlotsMut = useMutation({
@@ -285,19 +321,59 @@ function RoomsTab() {
     onError: (e: unknown) => toast.error(extractErrorMessage(e, 'Lưu thông tin bác sĩ thất bại')),
   });
 
+  const handleSubmitRoom = () => {
+    if (!form.name.trim()) { setNameError('Tên phòng không được để trống'); return; }
+    const duplicate = rooms.find(r => r.name.trim().toLowerCase() === form.name.trim().toLowerCase() && r.id !== editRoomId);
+    if (duplicate) { setNameError('Tên phòng đã tồn tại'); return; }
+    setNameError('');
+    if (editRoomId) {
+      updateRoomMut.mutate({ id: editRoomId, data: form });
+    } else {
+      createRoomMut.mutate(form);
+    }
+  };
+
+  const handleDeleteRoom = (r: ClinicRoom) => {
+    if (!window.confirm(`Xoá phòng "${r.name}"? Thao tác này không thể hoàn tác.`)) return;
+    deleteRoomMut.mutate(r.id);
+  };
+
+  const startEditRoom = (r: ClinicRoom) => {
+    setEditRoomId(r.id);
+    setForm({ name: r.name, description: r.description ?? '', type: r.type as any });
+    setNameError('');
+  };
+
+  const cancelEditRoom = () => {
+    setEditRoomId(null);
+    setForm(emptyForm);
+    setNameError('');
+  };
+
   const room = selectedRoom
     ? rooms.find(r => r.id === selectedRoom.id) ?? selectedRoom
     : null;
 
+  const isPending = createRoomMut.isPending || updateRoomMut.isPending;
+
   return (
     <div className="flex gap-6">
-      {/* Room list + create form */}
+      {/* Room list + create/edit form */}
       <div className="w-72">
         <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-          <h3 className="font-semibold text-gray-700 mb-3">Thêm phòng khám</h3>
+          <h3 className="font-semibold text-gray-700 mb-3">
+            {editRoomId ? 'Sửa phòng khám' : 'Thêm phòng khám'}
+          </h3>
           <div className="space-y-3">
-            <input placeholder="Tên phòng" className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-              value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+            <div>
+              <input
+                placeholder="Tên phòng *"
+                className={`w-full px-3 py-2 border rounded-md text-sm ${nameError ? 'border-red-400' : 'border-gray-300'}`}
+                value={form.name}
+                onChange={e => { setForm(f => ({ ...f, name: e.target.value })); if (e.target.value.trim()) setNameError(''); }}
+              />
+              {nameError && <p className="text-xs text-red-500 mt-1">{nameError}</p>}
+            </div>
             <input placeholder="Mô tả" className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
               value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
             <select className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
@@ -305,20 +381,35 @@ function RoomsTab() {
               <option value="examination">Phòng khám</option>
               <option value="result">Trả kết quả</option>
             </select>
-            <button onClick={() => createRoomMut.mutate(form)}
-              className="w-full bg-blue-600 text-white py-2 rounded-md text-sm hover:bg-blue-700">
-              Thêm phòng
-            </button>
+            <div className="flex gap-2">
+              <button onClick={handleSubmitRoom} disabled={isPending}
+                className="flex-1 bg-blue-600 text-white py-2 rounded-md text-sm hover:bg-blue-700 disabled:opacity-40">
+                {isPending ? 'Đang lưu...' : (editRoomId ? 'Cập nhật' : 'Thêm phòng')}
+              </button>
+              {editRoomId && (
+                <button onClick={cancelEditRoom}
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50">
+                  Huỷ
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           {rooms.map(r => (
-            <button key={r.id} onClick={() => { setSelectedRoom(r); setSlotCount(r.slots?.length || 5); }}
-              className={`w-full text-left px-4 py-3 border-b border-gray-100 text-sm hover:bg-gray-50 ${selectedRoom?.id === r.id ? 'bg-blue-50' : ''}`}>
-              <div className="font-medium text-gray-800">{r.name}</div>
-              <div className="text-xs text-gray-400">{r.type === 'examination' ? 'Phòng khám' : 'Trả kết quả'} · {r.slots?.length ?? 0} slot</div>
-            </button>
+            <div key={r.id}
+              className={`border-b border-gray-100 text-sm ${selectedRoom?.id === r.id ? 'bg-blue-50' : 'hover:bg-gray-50'} ${editRoomId === r.id ? 'ring-2 ring-inset ring-blue-400' : ''}`}>
+              <button className="w-full text-left px-4 py-3"
+                onClick={() => { setSelectedRoom(r); setSlotCount(r.slots?.length || 5); }}>
+                <div className="font-medium text-gray-800">{r.name}</div>
+                <div className="text-xs text-gray-400">{r.type === 'examination' ? 'Phòng khám' : 'Trả kết quả'} · {r.slots?.length ?? 0} slot</div>
+              </button>
+              <div className="px-4 pb-2 flex gap-3">
+                <button onClick={() => startEditRoom(r)} className="text-xs text-blue-600 hover:underline">Sửa</button>
+                <button onClick={() => handleDeleteRoom(r)} className="text-xs text-red-500 hover:underline">Xoá</button>
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -375,11 +466,6 @@ function SlotCard({ slot, onUpdate }: {
   onUpdate: (slotId: string, data: { doctorName?: string; isAbsent?: boolean }) => void;
 }) {
   const [doctorName, setDoctorName] = useState(slot.doctorName ?? '');
-
-  // Sync nếu slot data từ server thay đổi (ví dụ reload trang)
-  useEffect(() => {
-    setDoctorName(slot.doctorName ?? '');
-  }, [slot.doctorName]);
 
   return (
     <div className={`border rounded-lg p-3 ${slot.isAbsent ? 'border-red-200 bg-red-50' : 'border-gray-200'}`}>
