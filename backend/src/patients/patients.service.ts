@@ -65,15 +65,26 @@ export class PatientsService implements OnModuleInit {
   }
 
   async create(dto: CreatePatientDto) {
-    const patient = this.patientRepo.create(dto);
+    const patient = this.patientRepo.create(this.sanitize(dto) as CreatePatientDto);
     patient.patientCode = await this.nextPatientCode();
     return this.patientRepo.save(patient);
   }
 
   async update(id: string, dto: UpdatePatientDto) {
     const patient = await this.findOne(id);
-    Object.assign(patient, dto);
+    Object.assign(patient, this.sanitize(dto));
     return this.patientRepo.save(patient);
+  }
+
+  // Chuyển empty string → null cho các field nullable unique
+  private sanitize(dto: any) {
+    return {
+      ...dto,
+      idCard: dto.idCard?.trim() || null,
+      phone: dto.phone?.trim() || null,
+      address: dto.address?.trim() || null,
+      notes: dto.notes?.trim() || null,
+    };
   }
 
   async remove(id: string) {
