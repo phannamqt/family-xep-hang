@@ -6,7 +6,9 @@ const mockConfig = (): ScoreConfig =>
   ({
     timeCoefficient: 0.04,
     skipScores: [20, 40, 60],
-    autoSkipScore: 5,
+    autoSkipScores: [5, 10, 20],
+    waitingScorePerMinute: 1,
+    lateDeductionPerMinute: 1,
   }) as ScoreConfig;
 
 const mockEntry = (overrides: Partial<QueueEntry> = {}): QueueEntry =>
@@ -75,7 +77,7 @@ describe('ScoreService', () => {
       expect(bd.scoreS).toBe(20);
       expect(bd.scoreF).toBe(5);
       expect(bd.waitingMinutes).toBeGreaterThanOrEqual(9);
-      expect(bd.total).toBeCloseTo(bd.scoreP + bd.scoreT + bd.scoreS + bd.scoreF, 1);
+      expect(bd.total).toBeCloseTo(bd.scoreP + bd.scoreT + bd.scoreS + bd.scoreC + bd.scoreF, 1);
     });
 
     it('bệnh nhân vừa check-in (queuedAt = now): T = 0', () => {
