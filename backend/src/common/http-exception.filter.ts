@@ -32,8 +32,20 @@ export class AllExceptionsFilter implements ExceptionFilter {
         // Unique violation — lấy tên field từ detail
         const detail: string = err.detail ?? '';
         const match = detail.match(/\(([^)]+)\)/);
-        const field = match?.[1] ?? 'trường dữ liệu';
-        message = `Giá trị "${field}" đã tồn tại trong hệ thống`;
+        const rawField = match?.[1] ?? '';
+        const fieldLabels: Record<string, string> = {
+          id_card: 'Số CCCD',
+          idCard: 'Số CCCD',
+          phone: 'Số điện thoại',
+          email: 'Email',
+          patient_code: 'Mã bệnh nhân',
+          patientCode: 'Mã bệnh nhân',
+          name: 'Tên',
+          visit_code: 'Mã lượt khám',
+          visitCode: 'Mã lượt khám',
+        };
+        const label = fieldLabels[rawField] ?? rawField;
+        message = `${label} này đã tồn tại trong hệ thống`;
         status = HttpStatus.CONFLICT;
       } else if (code === '23503') {
         message = 'Dữ liệu liên quan không tồn tại';
