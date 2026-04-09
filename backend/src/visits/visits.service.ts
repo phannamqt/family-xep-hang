@@ -31,7 +31,10 @@ export class VisitsService {
       .createQueryBuilder('visit')
       .leftJoinAndSelect('visit.patient', 'patient')
       .leftJoinAndSelect('visit.room', 'room')
-      .orderBy('visit.createdAt', 'DESC');
+      .leftJoinAndSelect('visit.queueEntries', 'queueEntries')
+      .leftJoinAndSelect('queueEntries.room', 'queueRoom')
+      .orderBy('visit.createdAt', 'DESC')
+      .addOrderBy('queueEntries.queuedAt', 'ASC');
 
     if (date) query.where('visit.visitDate = :date', { date });
 
@@ -139,6 +142,7 @@ export class VisitsService {
     // Ghi nhận lần check-in đầu tiên (chỉ set một lần)
     if (!visit.checkInAt) {
       visit.checkInAt = new Date();
+      visit.checkInType = dto.type;
       await this.visitRepo.save(visit);
     }
 

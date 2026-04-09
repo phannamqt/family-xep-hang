@@ -64,6 +64,7 @@ export interface Visit {
   checkInAt?: string;
   visitDate: string;
   createdAt: string;
+  queueEntries?: QueueEntry[];
 }
 
 // ===== Queue =====
@@ -82,6 +83,9 @@ export interface QueueEntry {
   id: string;
   visitId: string;
   visit: Visit;
+  room?: ClinicRoom;
+  roomId?: string;
+  checkInType?: 'new' | 'result';
   slot?: DoctorSlot;
   slotId?: string;
   status: QueueStatus;

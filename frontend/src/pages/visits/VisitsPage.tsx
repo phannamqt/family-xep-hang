@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { visitsApi, patientsApi, configApi } from '../../api';
@@ -12,6 +12,65 @@ const emptyForm = {
   appointmentTime: '',
   visitDate: format(new Date(), 'yyyy-MM-dd'),
 };
+
+function CheckInCell({ visit }: { visit: Visit }) {
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const ref = useRef<HTMLSpanElement>(null);
+  const entries = visit.queueEntries ?? [];
+
+  if (!visit.checkInAt) return <span className="text-gray-400 text-xs">Chưa check-in</span>;
+
+  const lastEntry = entries.length > 0 ? entries[entries.length - 1] : null;
+  const lastRoomName = lastEntry?.room?.name ?? '—';
+
+  const handleMouseEnter = () => {
+    if (!ref.current || entries.length === 0) return;
+    const rect = ref.current.getBoundingClientRect();
+    setPos({ top: rect.bottom + 6, left: rect.left });
+  };
+
+  return (
+    <>
+      <span
+        ref={ref}
+        className="text-green-600 text-xs cursor-help"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={() => setPos(null)}
+      >
+        ✓ {new Date(visit.checkInAt).toLocaleTimeString('vi-VN')} · {lastRoomName}
+      </span>
+
+      {pos && (
+        <div
+          className="fixed z-50 bg-gray-900 text-white text-xs rounded-lg p-3 w-56 shadow-xl"
+          style={{ top: pos.top, left: pos.left }}
+          onMouseLeave={() => setPos(null)}
+        >
+          <div className="font-semibold mb-2 border-b border-gray-600 pb-1">Các phòng đã check-in</div>
+          <div className="space-y-1">
+            {entries.map((e, i) => {
+              const statusLabel: Record<string, string> = {
+                waiting: '⏳ Chờ',
+                in_room: '🔵 Đang khám',
+                done: '✅ Xong',
+                skipped: '⏭ Bỏ qua',
+              };
+              return (
+                <div key={e.id} className="flex justify-between gap-2">
+                  <span className="text-gray-300">{i + 1}. {e.room?.name ?? '?'}</span>
+                  <span className="text-gray-400 shrink-0 text-right">
+                    <div>{e.checkInType === 'new' ? 'Khám mới' : 'Trả KQ'} · {new Date(e.queuedAt).toLocaleTimeString('vi-VN')}</div>
+                    <div>{statusLabel[e.status] ?? e.status}</div>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
 
 export default function VisitsPage() {
   const qc = useQueryClient();
@@ -226,8 +285,8 @@ export default function VisitsPage() {
       )}
 
       {/* Desktop table */}
-      <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-visible">
+        <table className="w-full text-sm overflow-hidden rounded-lg">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="text-left px-4 py-3 font-medium text-gray-600 w-36">Mã lượt</th>
@@ -256,10 +315,7 @@ export default function VisitsPage() {
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  {v.checkInAt
-                    ? <span className="text-green-600 text-xs">✓ {new Date(v.checkInAt).toLocaleTimeString('vi-VN')} ({v.checkInType === 'new' ? 'Khám mới' : 'Trả KQ'})</span>
-                    : <span className="text-gray-400 text-xs">Chưa check-in</span>
-                  }
+                  <CheckInCell visit={v} />
                 </td>
                 <td className="px-4 py-3 text-center">
                   <button onClick={() => openEdit(v)} className="text-blue-600 hover:underline text-xs">Sửa</button>
